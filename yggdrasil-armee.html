@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YGGDRASIL — Armée & Combat</title>
+<link href="https://fonts.googleapis.com/css2?family=Uncial+Antiqua&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:        #0e0a04;
+  --parch:      #d4b896;
+  --parch-dim:  #8a7055;
+  --parch-light:#f0dfc0;
+  --gold:       #c8960c;
+  --gold-light: #f0c040;
+  --gold-glow:  rgba(200,150,12,0.5);
+  --blood:      #8b1a1a;
+  --blood-bright:#e74c3c;
+  --frost:      #4a9abb;
+  --moss:       #4a7a35;
+  --moss-light: #6aaa50;
+  --purple:     #8e44ad;
+  --orange:     #d35400;
+  --border:     rgba(200,150,12,0.22);
+  --panel:      rgba(14,10,4,0.95);
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'IM Fell English',Georgia,serif;background:var(--ink);color:var(--parch);overflow:hidden}
+
+/* BG */
+#bg{position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse at 30% 70%,rgba(139,26,26,0.07) 0%,transparent 55%),
+             radial-gradient(ellipse at 70% 30%,rgba(200,150,12,0.05) 0%,transparent 55%),#0e0a04}
+.bg-rune{position:absolute;font-size:7rem;opacity:0.018;color:var(--gold);animation:rf 18s ease-in-out infinite;pointer-events:none}
+@keyframes rf{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-15px) rotate(4deg)}}
+
+/* TOPBAR */
+#topbar{position:relative;z-index:100;background:rgba(8,5,1,0.97);border-bottom:1px solid var(--border);
+  padding:.4rem .9rem;display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;
+  box-shadow:0 2px 20px rgba(0,0,0,.8)}
+.logo{font-family:'Uncial Antiqua',serif;font-size:1.15rem;color:var(--gold);letter-spacing:3px;
+  text-shadow:0 0 15px var(--gold-glow);text-decoration:none;flex-shrink:0}
+.logo span{font-size:.52rem;display:block;color:var(--parch-dim);letter-spacing:3px}
+.sep{width:1px;height:26px;background:var(--border);flex-shrink:0}
+.res{display:flex;align-items:center;gap:.22rem;background:rgba(200,150,12,.06);border:1px solid var(--border);
+  border-radius:3px;padding:.18rem .45rem;font-size:.78rem}
+.res .v{color:var(--parch-light);font-weight:600;min-width:24px}
+.res.rare .v{color:var(--gold-light)}
+.moral-chip{display:flex;align-items:center;gap:.4rem;background:rgba(200,150,12,.06);
+  border:1px solid var(--border);border-radius:3px;padding:.18rem .6rem;font-size:.78rem;margin-left:auto}
+.moral-bar-bg{width:60px;height:6px;background:rgba(0,0,0,.4);border-radius:3px;overflow:hidden}
+.moral-bar{height:100%;border-radius:3px;transition:width .5s,background .5s}
+
+/* LAYOUT */
+#main{position:relative;z-index:10;display:flex;height:calc(100vh - 46px);overflow:hidden}
+
+/* ── TABS GAUCHE ── */
+#left-panel{width:210px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden}
+.lp-tabs{display:flex;border-bottom:1px solid var(--border)}
+.lp-tab{flex:1;padding:.45rem .2rem;font-size:.62rem;letter-spacing:1px;text-transform:uppercase;
+  color:var(--parch-dim);cursor:pointer;text-align:center;border-bottom:2px solid transparent;transition:all .2s}
+.lp-tab:hover{color:var(--parch)}
+.lp-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.lp-body{flex:1;overflow-y:auto;padding:.5rem}
+.lp-body::-webkit-scrollbar{width:3px}
+.lp-body::-webkit-scrollbar-thumb{background:var(--border)}
+
+/* Cartes troupes (liste) */
+.troop-row{display:flex;align-items:center;gap:.45rem;padding:.4rem .5rem;border-radius:3px;
+  cursor:pointer;border:1px solid transparent;margin-bottom:.22rem;transition:all .15s;position:relative}
+.troop-row:hover{background:rgba(200,150,12,.06);border-color:var(--border)}
+.troop-row.active{background:rgba(200,150,12,.1);border-color:rgba(200,150,12,.4)}
+.tr-icon{font-size:1.1rem;flex-shrink:0}
+.tr-name{flex:1;font-size:.78rem;line-height:1.2}
+.tr-count{font-size:.72rem;background:rgba(200,150,12,.1);border:1px solid rgba(200,150,12,.25);
+  border-radius:8px;padding:1px 5px;color:var(--gold);flex-shrink:0}
+
+/* ── ZONE CENTRE ── */
+#center{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* Onglets centre */
+.center-tabs{display:flex;background:rgba(8,5,1,.9);border-bottom:1px solid var(--border)}
+.c-tab{padding:.5rem 1.2rem;font-family:'Uncial Antiqua',serif;font-size:.75rem;letter-spacing:1.5px;
+  color:var(--parch-dim);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
+.c-tab:hover{color:var(--parch)}
+.c-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+
+.c-content{flex:1;overflow-y:auto;padding:1rem 1.2rem}
+.c-content::-webkit-scrollbar{width:4px}
+.c-content::-webkit-scrollbar-thumb{background:var(--border)}
+.c-pane{display:none}
+.c-pane.active{display:block}
+
+/* ── RECRUTEMENT ── */
+.recruit-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:.9rem;margin-bottom:1.5rem}
+.recruit-card{background:rgba(14,10,4,.9);border:1px solid var(--border);border-radius:5px;
+  padding:.9rem;position:relative;transition:border-color .2s,transform .2s;overflow:hidden}
+.recruit-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:0;transition:opacity .2s}
+.recruit-card:hover{border-color:var(--gold);transform:translateY(-2px)}
+.recruit-card:hover::before{opacity:1}
+.recruit-card.locked{opacity:.4}
+.rc-top{display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem}
+.rc-icon{font-size:2rem;filter:drop-shadow(0 2px 6px rgba(0,0,0,.7))}
+.rc-name{font-family:'Uncial Antiqua',serif;font-size:.88rem;color:var(--gold-light);letter-spacing:1px}
+.rc-role{font-size:.65rem;color:var(--parch-dim);font-style:italic}
+.rc-stats{display:flex;gap:.35rem;flex-wrap:wrap;margin-bottom:.6rem}
+.stat-pill{display:flex;align-items:center;gap:.2rem;background:rgba(200,150,12,.06);
+  border:1px solid rgba(200,150,12,.15);border-radius:3px;padding:.15rem .4rem;font-size:.72rem}
+.rc-count{text-align:center;font-size:1.5rem;font-weight:600;color:var(--parch-light);margin-bottom:.4rem}
+.rc-cost{display:flex;gap:.3rem;flex-wrap:wrap;margin-bottom:.6rem}
+.cost-pill{display:flex;align-items:center;gap:.2rem;font-size:.72rem;padding:.15rem .35rem;
+  border-radius:3px;border:1px solid rgba(200,150,12,.2)}
+.cost-pill.ok{color:var(--parch)}
+.cost-pill.nok{color:var(--blood-bright);border-color:rgba(231,76,60,.3)}
+.rc-train-row{display:flex;gap:.4rem;align-items:center}
+.rc-input{width:55px;background:rgba(0,0,0,.5);border:1px solid var(--border);color:var(--parch);
+  padding:.28rem .4rem;font-family:'IM Fell English',serif;font-size:.95rem;border-radius:3px;
+  text-align:center;outline:none}
+.rc-input:focus{border-color:var(--gold)}
+.btn-train{flex:1;padding:.35rem .5rem;font-family:'Uncial Antiqua',serif;font-size:.7rem;letter-spacing:1px;
+  background:rgba(200,150,12,.1);border:1px solid rgba(200,150,12,.4);color:var(--gold);
+  cursor:pointer;border-radius:3px;transition:all .2s}
+.btn-train:hover:not(:disabled){background:rgba(200,150,12,.22);box-shadow:0 0 10px var(--gold-glow)}
+.btn-train:disabled{opacity:.35;cursor:not-allowed}
+
+/* Barre d'entraînement */
+.train-queue{background:rgba(200,150,12,.06);border:1px solid var(--border);border-radius:4px;
+  padding:.7rem 1rem;margin-bottom:1rem}
+.tq-title{font-size:.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--parch-dim);margin-bottom:.5rem}
+.tq-item{display:flex;align-items:center;gap:.5rem;font-size:.82rem;margin-bottom:.3rem}
+.tq-bar-bg{flex:1;background:rgba(0,0,0,.4);border-radius:3px;height:5px;overflow:hidden}
+.tq-bar{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-light));border-radius:3px;transition:width 1s}
+
+/* ── HÉROS ── */
+.hero-header{display:flex;gap:1.2rem;margin-bottom:1.2rem;align-items:flex-start;flex-wrap:wrap}
+.hero-avatar{width:80px;height:80px;border-radius:50%;border:3px solid var(--gold);
+  background:radial-gradient(ellipse,rgba(200,150,12,.15),rgba(14,10,4,.95));
+  display:flex;align-items:center;justify-content:center;font-size:2.5rem;flex-shrink:0;
+  box-shadow:0 0 20px var(--gold-glow);animation:heroGlow 3s ease-in-out infinite}
+@keyframes heroGlow{0%,100%{box-shadow:0 0 15px var(--gold-glow)}50%{box-shadow:0 0 30px var(--gold-glow)}}
+.hero-info{flex:1}
+.hero-name{font-family:'Uncial Antiqua',serif;font-size:1.2rem;color:var(--gold-light);margin-bottom:.3rem}
+.hero-role{font-size:.8rem;color:var(--parch-dim);font-style:italic;margin-bottom:.5rem}
+.hero-xp-wrap{margin-bottom:.4rem}
+.hero-xp-label{display:flex;justify-content:space-between;font-size:.72rem;color:var(--parch-dim);margin-bottom:.25rem}
+.hero-xp-bg{background:rgba(0,0,0,.4);border-radius:3px;height:7px;overflow:hidden}
+.hero-xp-fill{height:100%;background:linear-gradient(90deg,#8e44ad,#c070e0);border-radius:3px;
+  box-shadow:0 0 8px rgba(142,68,173,.5);transition:width .8s ease}
+.hero-stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem;margin-bottom:1rem}
+.hs-item{background:rgba(200,150,12,.05);border:1px solid var(--border);border-radius:3px;
+  padding:.35rem .5rem;text-align:center}
+.hs-label{font-size:.6rem;color:var(--parch-dim);letter-spacing:1px;text-transform:uppercase}
+.hs-val{font-size:.95rem;color:var(--parch-light);font-weight:600}
+
+/* Arbre de talents */
+.talent-tree{display:flex;flex-direction:column;gap:.3rem}
+.talent-path-label{font-size:.62rem;letter-spacing:2px;text-transform:uppercase;
+  color:var(--parch-dim);margin:.6rem 0 .3rem;padding-bottom:.2rem;border-bottom:1px solid rgba(200,150,12,.1)}
+.talent-node{display:flex;align-items:center;gap:.6rem;padding:.45rem .7rem;border-radius:4px;
+  cursor:pointer;border:1px solid var(--border);background:rgba(200,150,12,.03);
+  transition:all .2s;position:relative}
+.talent-node:hover:not(.locked-t){border-color:var(--gold);background:rgba(200,150,12,.09)}
+.talent-node.learned{border-color:var(--moss-light);background:rgba(74,122,53,.1)}
+.talent-node.available{border-color:rgba(200,150,12,.5);background:rgba(200,150,12,.07)}
+.talent-node.locked-t{opacity:.38;cursor:default}
+.t-icon{font-size:1.2rem;flex-shrink:0}
+.t-body{flex:1}
+.t-name{font-size:.82rem;color:var(--parch-light);margin-bottom:.1rem}
+.t-desc{font-size:.7rem;color:var(--parch-dim);font-style:italic}
+.t-badge{font-size:.62rem;padding:2px 6px;border-radius:10px;flex-shrink:0}
+.t-badge.done{background:rgba(74,122,53,.3);color:var(--moss-light)}
+.t-badge.avail{background:rgba(200,150,12,.2);color:var(--gold)}
+.t-badge.lock{background:rgba(0,0,0,.3);color:var(--parch-dim)}
+.tp-cost{font-size:.65rem;color:var(--purple);margin-top:.1rem}
+
+/* Points de talent */
+.tp-display{display:flex;align-items:center;gap:.5rem;background:rgba(142,68,173,.08);
+  border:1px solid rgba(142,68,173,.3);border-radius:3px;padding:.35rem .8rem;margin-bottom:.8rem;font-size:.82rem}
+.tp-val{color:#c070e0;font-size:1.1rem;font-weight:600}
+
+/* ── COMBAT ── */
+.combat-setup{display:grid;grid-template-columns:1fr auto 1fr;gap:1rem;align-items:start;margin-bottom:1rem}
+.side-card{background:rgba(14,10,4,.9);border:1px solid var(--border);border-radius:5px;padding:.9rem}
+.side-title{font-family:'Uncial Antiqua',serif;font-size:.9rem;letter-spacing:1px;margin-bottom:.7rem;
+  display:flex;align-items:center;gap:.4rem}
+.side-title.ally{color:var(--moss-light)}
+.side-title.enemy{color:var(--blood-bright)}
+.vs-divider{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.3rem;padding-top:2rem}
+.vs-text{font-family:'Uncial Antiqua',serif;font-size:1.4rem;color:var(--gold);
+  text-shadow:0 0 15px var(--gold-glow)}
+.troop-deploy{display:flex;align-items:center;gap:.4rem;margin-bottom:.35rem;font-size:.82rem}
+.deploy-input{width:55px;background:rgba(0,0,0,.5);border:1px solid var(--border);color:var(--parch);
+  padding:.22rem .4rem;font-family:'IM Fell English',serif;font-size:.9rem;border-radius:3px;text-align:center;outline:none}
+.deploy-input:focus{border-color:var(--gold)}
+.deploy-max{font-size:.65rem;color:var(--parch-dim)}
+.enemy-select{width:100%;background:rgba(0,0,0,.5);border:1px solid var(--border);color:var(--parch);
+  padding:.5rem;font-family:'IM Fell English',serif;font-size:.88rem;border-radius:3px;outline:none;margin-bottom:.6rem}
+.enemy-stat-row{display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:.25rem}
+.enemy-stat-row span:first-child{color:var(--parch-dim)}
+.enemy-stat-row span:last-child{color:var(--parch-light);font-weight:600}
+.btn-fight{width:100%;padding:.65rem;font-family:'Uncial Antiqua',serif;font-size:.9rem;letter-spacing:2px;
+  background:linear-gradient(135deg,rgba(139,26,26,.3),rgba(200,50,50,.15));
+  border:1px solid rgba(231,76,60,.6);color:#e74c3c;cursor:pointer;border-radius:4px;
+  transition:all .2s;margin-top:.5rem}
+.btn-fight:hover:not(:disabled){background:rgba(139,26,26,.4);box-shadow:0 0 15px rgba(231,76,60,.3)}
+.btn-fight:disabled{opacity:.35;cursor:not-allowed}
+
+/* ── ANIMATION COMBAT ── */
+#battle-arena{display:none;position:fixed;inset:0;z-index:500;
+  background:rgba(5,2,0,.97);align-items:center;justify-content:center;flex-direction:column}
+#battle-arena.open{display:flex}
+
+.arena-bg{position:absolute;inset:0;overflow:hidden}
+.arena-ground{position:absolute;bottom:0;left:0;right:0;height:35%;
+  background:linear-gradient(180deg,transparent,rgba(30,15,5,.8),rgba(10,5,0,.95))}
+.arena-sky{position:absolute;top:0;left:0;right:0;height:65%;
+  background:linear-gradient(180deg,#0a0520 0%,#1a0a30 40%,#2d1a05 100%)}
+
+/* Étoiles */
+.a-star{position:absolute;background:white;border-radius:50%;animation:twinkle 2s ease-in-out infinite}
+@keyframes twinkle{0%,100%{opacity:.3}50%{opacity:1}}
+
+.arena-title{font-family:'Uncial Antiqua',serif;font-size:1.8rem;color:var(--gold);
+  letter-spacing:4px;text-shadow:0 0 30px var(--gold-glow);margin-bottom:1.5rem;
+  position:relative;z-index:10;animation:titlePulse 1s ease-in-out infinite}
+@keyframes titlePulse{0%,100%{text-shadow:0 0 20px var(--gold-glow)}50%{text-shadow:0 0 50px var(--gold-glow),0 0 80px rgba(200,150,12,.3)}}
+
+/* Combattants */
+.fighters-row{display:flex;align-items:flex-end;gap:4rem;position:relative;z-index:10;margin-bottom:1.5rem}
+.fighter{display:flex;flex-direction:column;align-items:center;gap:.5rem;width:120px}
+.fighter-sprite{font-size:4rem;filter:drop-shadow(0 4px 12px rgba(0,0,0,.8));
+  transition:transform .3s;position:relative}
+.fighter.ally .fighter-sprite{animation:idleAlly 2s ease-in-out infinite}
+.fighter.enemy .fighter-sprite{animation:idleEnemy 2s ease-in-out infinite;transform:scaleX(-1)}
+@keyframes idleAlly {0%,100%{transform:translateY(0)        }50%{transform:translateY(-6px)}}
+@keyframes idleEnemy{0%,100%{transform:translateY(0) scaleX(-1)}50%{transform:translateY(-6px) scaleX(-1)}}
+
+.fighter.attacking .fighter-sprite{animation:attack .4s ease-out}
+@keyframes attack{0%{transform:translateX(0)}30%{transform:translateX(40px)}60%{transform:translateX(-10px)}100%{transform:translateX(0)}}
+.fighter.enemy.attacking .fighter-sprite{animation:attackE .4s ease-out}
+@keyframes attackE{0%{transform:scaleX(-1) translateX(0)}30%{transform:scaleX(-1) translateX(40px)}60%{transform:scaleX(-1) translateX(-10px)}100%{transform:scaleX(-1) translateX(0)}}
+
+.fighter.hit .fighter-sprite{animation:hitAnim .3s ease-out}
+@keyframes hitAnim{0%,100%{filter:drop-shadow(0 4px 12px rgba(0,0,0,.8))}50%{filter:drop-shadow(0 0 20px rgba(231,76,60,.9)) brightness(2)}}
+
+.fighter-name{font-family:'Uncial Antiqua',serif;font-size:.8rem;color:var(--gold-light);letter-spacing:1px}
+.fighter-hp-bg{width:100px;height:8px;background:rgba(0,0,0,.6);border-radius:4px;overflow:hidden;border:1px solid rgba(200,150,12,.2)}
+.fighter-hp{height:100%;border-radius:4px;transition:width .4s ease,background .4s}
+
+/* Particules de dégâts */
+.dmg-float{position:absolute;font-family:'Uncial Antiqua',serif;font-size:1.4rem;font-weight:700;
+  pointer-events:none;animation:dmgFloat 1.2s ease-out forwards;z-index:20}
+@keyframes dmgFloat{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-60px) scale(1.4)}}
+
+/* Log de combat */
+.battle-log{width:min(500px,90vw);max-height:140px;overflow-y:auto;
+  background:rgba(0,0,0,.5);border:1px solid var(--border);border-radius:4px;
+  padding:.5rem .8rem;position:relative;z-index:10;margin-bottom:1rem}
+.battle-log::-webkit-scrollbar{width:3px}
+.battle-log::-webkit-scrollbar-thumb{background:var(--border)}
+.blog-line{font-size:.78rem;line-height:1.6;padding:.1rem 0;border-bottom:1px solid rgba(200,150,12,.05)}
+.blog-line.ally-line{color:var(--moss-light)}
+.blog-line.enemy-line{color:var(--blood-bright)}
+.blog-line.event-line{color:var(--gold)}
+
+.battle-btns{display:flex;gap:.8rem;position:relative;z-index:10}
+.btn-arena{padding:.5rem 1.4rem;font-family:'Uncial Antiqua',serif;font-size:.8rem;letter-spacing:1.5px;
+  border-radius:3px;cursor:pointer;transition:all .2s}
+.btn-skip{background:rgba(200,150,12,.1);border:1px solid rgba(200,150,12,.4);color:var(--gold)}
+.btn-skip:hover{background:rgba(200,150,12,.22)}
+.btn-close-arena{background:rgba(139,26,26,.2);border:1px solid rgba(231,76,60,.4);color:var(--blood-bright)}
+.btn-close-arena:hover{background:rgba(139,26,26,.35)}
+
+/* ── RAPPORTS ── */
+.report-card{background:rgba(14,10,4,.9);border:1px solid var(--border);border-radius:5px;
+  padding:1rem 1.2rem;margin-bottom:.8rem;border-left:3px solid var(--parch-dim)}
+.report-card.victory{border-left-color:var(--moss-light)}
+.report-card.defeat{border-left-color:var(--blood-bright)}
+.report-card.event{border-left-color:var(--gold)}
+.rc-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem}
+.rc-title{font-family:'Uncial Antiqua',serif;font-size:.9rem}
+.rc-title.victory{color:var(--moss-light)}
+.rc-title.defeat{color:var(--blood-bright)}
+.rc-time{font-size:.7rem;color:var(--parch-dim)}
+.rc-body{font-size:.82rem;color:var(--parch-dim);line-height:1.6;font-style:italic}
+.rc-losses{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.4rem}
+.loss-chip{font-size:.72rem;background:rgba(139,26,26,.1);border:1px solid rgba(139,26,26,.3);
+  border-radius:3px;padding:.15rem .45rem;color:var(--blood-bright)}
+.gain-chip{font-size:.72rem;background:rgba(74,122,53,.1);border:1px solid rgba(74,122,53,.3);
+  border-radius:3px;padding:.15rem .45rem;color:var(--moss-light)}
+
+/* Section title */
+.sec-t{font-size:.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--parch-dim);
+  margin-bottom:.6rem;padding-bottom:.3rem;border-bottom:1px solid rgba(200,150,12,.1)}
+
+/* TOAST */
+#toasts{position:fixed;bottom:1.2rem;right:1.2rem;z-index:9999;display:flex;flex-direction:column;gap:.4rem;pointer-events:none}
+.toast{background:rgba(8,5,1,.97);border:1px solid var(--gold);border-radius:3px;padding:.45rem .9rem;
+  font-size:.82rem;color:var(--parch-light);box-shadow:0 4px 20px rgba(0,0,0,.7);
+  animation:tIn .3s cubic-bezier(.34,1.56,.64,1),tOut .3s ease 3.5s forwards;
+  display:flex;align-items:center;gap:.4rem;max-width:270px}
+.toast.s{border-color:var(--moss-light)}
+.toast.d{border-color:var(--blood-bright)}
+@keyframes tIn{from{opacity:0;transform:translateX(30px)}}
+@keyframes tOut{to{opacity:0;transform:translateX(30px)}}
+
+@media(max-width:700px){
+  #left-panel{display:none}
+  .combat-setup{grid-template-columns:1fr}
+  .vs-divider{flex-direction:row;padding:0;margin:.5rem 0}
+}
+</style>
+</head>
+<body>
+<div id="bg">
+  <div class="bg-rune" style="top:8%;left:4%">ᚦ</div>
+  <div class="bg-rune" style="top:55%;left:82%;animation-delay:-9s">ᛏ</div>
+</div>
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <a class="logo" href="yggdrasil-village.html">YGGDRASIL<span>⁂ armée ⁂</span></a>
+  <div class="sep"></div>
+  <div style="display:flex;gap:.35rem;flex-wrap:wrap">
+    <div class="res"><span>🪵</span><span class="v" id="r-wood">480</span></div>
+    <div class="res"><span>🪨</span><span class="v" id="r-stone">320</span></div>
+    <div class="res"><span>🌾</span><span class="v" id="r-food">610</span></div>
+    <div class="res"><span>🪙</span><span class="v" id="r-gold">145</span></div>
+    <div class="res rare"><span>ᚱ</span><span class="v" id="r-runes">12</span></div>
+    <div class="res rare"><span>🍺</span><span class="v" id="r-mead">28</span></div>
+  </div>
+  <div class="moral-chip">
+    <span>⚔ Moral</span>
+    <div class="moral-bar-bg">
+      <div class="moral-bar" id="moral-bar" style="width:75%;background:#6aaa50"></div>
+    </div>
+    <span id="moral-val" style="color:#6aaa50;font-weight:600">75</span>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- LISTE TROUPES GAUCHE -->
+  <div id="left-panel">
+    <div class="lp-tabs">
+      <div class="lp-tab active" onclick="lpTab('troops',this)">Troupes</div>
+      <div class="lp-tab" onclick="lpTab('hero',this)">Héros</div>
+    </div>
+    <div class="lp-body" id="lp-troops">
+      <div class="sec-t" style="margin-top:.3rem">Vos effectifs</div>
+      <!-- généré JS -->
+    </div>
+    <div class="lp-body" id="lp-hero" style="display:none">
+      <!-- généré JS -->
+    </div>
+  </div>
+
+  <!-- CENTRE -->
+  <div id="center">
+    <div class="center-tabs">
+      <div class="c-tab active" onclick="cTab('recruit',this)">⚔ Recrutement</div>
+      <div class="c-tab" onclick="cTab('hero',this)">🦸 Héros</div>
+      <div class="c-tab" onclick="cTab('combat',this)">💀 Combat</div>
+      <div class="c-tab" onclick="cTab('reports',this)">📜 Rapports</div>
+    </div>
+    <div class="c-content">
+
+      <!-- RECRUTEMENT -->
+      <div class="c-pane active" id="pane-recruit">
+        <div id="train-queue-wrap"></div>
+        <div class="recruit-grid" id="recruit-grid"></div>
+      </div>
+
+      <!-- HÉROS -->
+      <div class="c-pane" id="pane-hero">
+        <div id="hero-panel"></div>
+      </div>
+
+      <!-- COMBAT -->
+      <div class="c-pane" id="pane-combat">
+        <div id="combat-panel"></div>
+      </div>
+
+      <!-- RAPPORTS -->
+      <div class="c-pane" id="pane-reports">
+        <div class="sec-t">Journal de Guerre</div>
+        <div id="reports-list"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ARÈNE DE COMBAT -->
+<div id="battle-arena">
+  <div class="arena-bg">
+    <div class="arena-sky" id="arena-sky"></div>
+    <div class="arena-ground"></div>
+  </div>
+  <div class="arena-title" id="arena-title">⚔ BATAILLE ⚔</div>
+  <div class="fighters-row" id="fighters-row">
+    <div class="fighter ally" id="fighter-ally">
+      <div class="fighter-sprite" id="sprite-ally">🪓</div>
+      <div class="fighter-name" id="fname-ally">Ragnar</div>
+      <div class="fighter-hp-bg"><div class="fighter-hp" id="hp-ally" style="width:100%;background:#6aaa50"></div></div>
+    </div>
+    <div style="font-family:'Uncial Antiqua',serif;font-size:2rem;color:var(--gold);position:relative;z-index:10">⚔</div>
+    <div class="fighter enemy" id="fighter-enemy">
+      <div class="fighter-sprite" id="sprite-enemy">💀</div>
+      <div class="fighter-name" id="fname-enemy">Ennemi</div>
+      <div class="fighter-hp-bg"><div class="fighter-hp" id="hp-enemy" style="width:100%;background:#e74c3c"></div></div>
+    </div>
+  </div>
+  <div class="battle-log" id="battle-log"></div>
+  <div class="battle-btns">
+    <button class="btn-arena btn-skip" onclick="skipBattle()">⏩ Passer</button>
+    <button class="btn-arena btn-close-arena" id="btn-close-arena" style="display:none" onclick="closeBattleArena()">✕ Fermer</button>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+// ══════════════════════════════════════════
+//  DONNÉES
+// ══════════════════════════════════════════
+const TROOPS_DEF = [
+  { id:'militia',  name:'Milicien',   icon:'🗡', sprite:'🗡', role:'Infanterie légère',
+    atk:2, def:2, hp:30, food:.5, speed:1,
+    cost:{wood:20,stone:0,food:30,gold:0}, trainTime:8,
+    desc:'Villageois armés à la hâte. Nombreux mais fragiles.',
+    unlock:'barracks', unlockLvl:1 },
+  { id:'warrior',  name:'Guerrier',   icon:'⚔', sprite:'⚔', role:'Infanterie lourde',
+    atk:6, def:5, hp:60, food:1, speed:1,
+    cost:{wood:30,stone:20,food:50,gold:10}, trainTime:15,
+    desc:'Épée et bouclier, formation de base des jarl.',
+    unlock:'barracks', unlockLvl:2 },
+  { id:'archer',   name:'Archer',     icon:'🏹', sprite:'🏹', role:'Distance',
+    atk:5, def:2, hp:40, food:1, speed:1,
+    cost:{wood:50,stone:0,food:40,gold:5}, trainTime:12,
+    desc:'Pluie de flèches avant l\'assaut principal.',
+    unlock:'barracks', unlockLvl:2 },
+  { id:'berserker',name:'Berserker',  icon:'🪓', sprite:'🪓', role:'Assaut frénétique',
+    atk:12, def:1, hp:50, food:1.5, speed:1,
+    cost:{wood:40,stone:30,food:80,gold:20}, trainTime:20,
+    desc:'Guerrier possédé par Odin. Attaque +200% mais défense réduite.',
+    unlock:'barracks', unlockLvl:3 },
+  { id:'shieldwall',name:'Bouclier',  icon:'🛡', sprite:'🛡', role:'Défense',
+    atk:3, def:12, hp:80, food:1.5, speed:1,
+    cost:{wood:60,stone:60,food:60,gold:30}, trainTime:22,
+    desc:'Mur de boucliers impénétrable. Idéal pour défendre le village.',
+    unlock:'barracks', unlockLvl:3 },
+  { id:'knight',   name:'Chevalier',  icon:'🐴', sprite:'🐴', role:'Cavalerie',
+    atk:14, def:8, hp:100, food:2, speed:2,
+    cost:{wood:80,stone:60,food:120,gold:60}, trainTime:35,
+    desc:'Charge dévastatrice. Débloqué via les Écuries.',
+    unlock:'stables', unlockLvl:1 },
+];
+
+const HERO_TALENTS = {
+  jarl: [
+    { path:'Voie du Raider', nodes:[
+      { id:'j1', name:'Lame Affûtée',    icon:'🗡', desc:'+15% ATK en raid', cost:1, bonus:{atkRaid:15} },
+      { id:'j2', name:'Pillage Expert',  icon:'💰', desc:'+25% butin récolté', cost:1, requires:'j1', bonus:{loot:25} },
+      { id:'j3', name:'Seigneur de Guerre',icon:'👑',desc:'Déblocage d\'unités d\'élite', cost:2, requires:'j2', bonus:{elite:true} },
+    ]},
+    { path:'Voie du Défenseur', nodes:[
+      { id:'j4', name:'Mur de Pierre',   icon:'🧱', desc:'+20% DEF du village', cost:1, bonus:{villageDef:20} },
+      { id:'j5', name:'Fortification',   icon:'🏰', desc:'Remparts gratuits Niv.2', cost:2, requires:'j4', bonus:{wallFree:true} },
+    ]},
+  ],
+  chaman: [
+    { path:'Voie des Runes', nodes:[
+      { id:'c1', name:'Rune de Feu',     icon:'🔥', desc:'Sort de feu en combat (-20% HP ennemi)', cost:1, bonus:{fireSpell:true} },
+      { id:'c2', name:'Rune de Glace',   icon:'❄', desc:'Ralentit l\'ennemi (-30% ATK)', cost:1, requires:'c1', bonus:{iceSpell:true} },
+      { id:'c3', name:'Rune de Mort',    icon:'☠', desc:'Invoque 5 Draugr alliés', cost:2, requires:'c2', bonus:{summonDraugr:true} },
+    ]},
+    { path:'Voie des Soins', nodes:[
+      { id:'c4', name:'Herbes Sacrées',  icon:'🌿', desc:'Soigne 15% HP en combat', cost:1, bonus:{heal:15} },
+      { id:'c5', name:'Bénédiction',     icon:'✨', desc:'+20% moral des troupes', cost:1, requires:'c4', bonus:{moral:20} },
+    ]},
+  ],
+  skald: [
+    { path:'Voie de la Saga', nodes:[
+      { id:'s1', name:'Chant de Guerre', icon:'🎵', desc:'+15% ATK toutes troupes', cost:1, bonus:{allAtk:15} },
+      { id:'s2', name:'Saga du Héros',   icon:'📜', desc:'+20 Gloire par victoire', cost:1, requires:'s1', bonus:{gloryBonus:20} },
+      { id:'s3', name:'Légende Vivante', icon:'⭐', desc:'Moral ne descend jamais sous 50', cost:2, requires:'s2', bonus:{moralFloor:50} },
+    ]},
+    { path:'Voie de l\'Espion', nodes:[
+      { id:'s4', name:'Rumeurs',         icon:'🕵', desc:'Espionnage gratuit 1×/jour', cost:1, bonus:{freespy:true} },
+      { id:'s5', name:'Double Agent',    icon:'🎭', desc:'30% chance de retourner un espion ennemi', cost:2, requires:'s4', bonus:{doubleagent:true} },
+    ]},
+  ],
+  forge: [
+    { path:'Voie du Métal', nodes:[
+      { id:'f1', name:'Acier Nordique',  icon:'⚔', desc:'+20% ATK toutes troupes', cost:1, bonus:{allAtk:20} },
+      { id:'f2', name:'Armure Runique',  icon:'🛡', desc:'+25% DEF toutes troupes', cost:1, requires:'f1', bonus:{allDef:25} },
+      { id:'f3', name:'Arme Légendaire', icon:'🌟', desc:'Héros ATK x2', cost:2, requires:'f2', bonus:{heroAtk2:true} },
+    ]},
+    { path:'Voie du Bâtisseur', nodes:[
+      { id:'f4', name:'Maître Artisan',  icon:'🔨', desc:'Construction -30%', cost:1, bonus:{buildCost:-30} },
+      { id:'f5', name:'Monument',        icon:'🗿', desc:'Débloque Monument d\'Alliance', cost:2, requires:'f4', bonus:{monument:true} },
+    ]},
+  ],
+};
+
+const ENEMIES = [
+  { id:'draugr',   name:'Horde de Draugr',      icon:'💀', sprite:'💀', atk:8,  def:4,  hp:200, reward:{food:80,gold:30,runes:1},   glory:40  },
+  { id:'jotun',    name:'Géant de Jötunheim',    icon:'👹', sprite:'👹', atk:18, def:10, hp:350, reward:{stone:150,gold:80,runes:3},  glory:100 },
+  { id:'fenrir',   name:'Fenrir le Loup',        icon:'🐺', sprite:'🐺', atk:25, def:8,  hp:500, reward:{gold:200,runes:8,souls:2},   glory:200 },
+  { id:'clan_ulf', name:'Clan Ulfhéðnar',        icon:'🪓', sprite:'🪓', atk:12, def:8,  hp:300, reward:{wood:200,food:150,gold:60},  glory:80  },
+  { id:'clan_hel', name:'Guerriers de Hel',      icon:'💀', sprite:'💀', atk:20, def:12, hp:400, reward:{runes:5,souls:3,mead:20},    glory:150 },
+];
+
+const state = {
+  role: 'jarl',
+  player: 'Ragnar',
+  tick: 0,
+  resources: { wood:480,stone:320,food:610,gold:145,runes:12,souls:3,mead:28 },
+  moral: 75,
+  troops: { militia:15, warrior:8, archer:5, berserker:2, shieldwall:3, knight:0 },
+  buildings: { barracks:3, stables:1 },
+  hero: {
+    name: 'Ragnar Lothbrok',
+    level: 4, xp: 340, xpNext: 500,
+    atk: 22, def: 15, hp: 180,
+    talentPoints: 3,
+    learned: new Set(['j1','j2']),
+  },
+  trainQueue: [],
+  reports: [],
+  glory: 1240,
+};
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+function init() {
+  renderTroopList();
+  renderHeroSidebar();
+  renderRecruitGrid();
+  renderHeroPanel();
+  renderCombatPanel();
+  renderReports();
+  updateRes();
+  updateMoral();
+  spawnArenaStars();
+}
+
+// ══════════════════════════════════════════
+//  TABS
+// ══════════════════════════════════════════
+function lpTab(tab, el) {
+  document.getElementById('lp-troops').style.display = tab==='troops'?'':'none';
+  document.getElementById('lp-hero').style.display   = tab==='hero'  ?'':'none';
+  document.querySelectorAll('.lp-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  if(tab==='hero') renderHeroSidebar();
+}
+
+function cTab(tab, el) {
+  document.querySelectorAll('.c-pane').forEach(p=>p.classList.remove('active'));
+  document.getElementById('pane-'+tab).classList.add('active');
+  document.querySelectorAll('.c-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  if(tab==='reports') renderReports();
+}
+
+// ══════════════════════════════════════════
+//  LISTE TROUPES (sidebar)
+// ══════════════════════════════════════════
+function renderTroopList() {
+  const el = document.getElementById('lp-troops');
+  let html = '<div class="sec-t" style="margin-top:.3rem">Vos effectifs</div>';
+  let total = 0;
+  TROOPS_DEF.forEach(t => {
+    const n = state.troops[t.id]||0;
+    if(!isUnlocked(t)) return;
+    total += n;
+    html += `<div class="troop-row">
+      <div class="tr-icon">${t.icon}</div>
+      <div class="tr-name">${t.name}</div>
+      <div class="tr-count">${n}</div>
+    </div>`;
+  });
+  html += `<div style="margin-top:.5rem;font-size:.72rem;color:var(--parch-dim);text-align:center">Total : ${total} guerriers</div>`;
+  el.innerHTML = html;
+}
+
+// ══════════════════════════════════════════
+//  RECRUTEMENT
+// ══════════════════════════════════════════
+function isUnlocked(t) {
+  const bldLvl = state.buildings[t.unlock]||0;
+  return bldLvl >= t.unlockLvl;
+}
+
+function renderRecruitGrid() {
+  const grid = document.getElementById('recruit-grid');
+  grid.innerHTML = '';
+  TROOPS_DEF.forEach(t => {
+    const unlocked = isUnlocked(t);
+    const n = state.troops[t.id]||0;
+    const card = document.createElement('div');
+    card.className = 'recruit-card' + (!unlocked?' locked':'');
+
+    const costHtml = Object.entries(t.cost).filter(([,v])=>v>0).map(([r,v])=>{
+      const icons={wood:'🪵',stone:'🪨',food:'🌾',gold:'🪙'};
+      const ok=(state.resources[r]||0)>=v;
+      return `<div class="cost-pill ${ok?'ok':'nok'}">${icons[r]} ${v}</div>`;
+    }).join('');
+
+    card.innerHTML = `
+      <div class="rc-top">
+        <div class="rc-icon">${unlocked?t.icon:'🔒'}</div>
+        <div>
+          <div class="rc-name">${t.name}</div>
+          <div class="rc-role">${unlocked?t.role:'Caserne Niv.'+t.unlockLvl+' requis'}</div>
+        </div>
+      </div>
+      ${unlocked?`
+      <div class="rc-stats">
+        <div class="stat-pill">⚔${t.atk}</div>
+        <div class="stat-pill">🛡${t.def}</div>
+        <div class="stat-pill">❤${t.hp}</div>
+        <div class="stat-pill">🌾${t.food}/t</div>
+      </div>
+      <div class="rc-count">${n}</div>
+      <div class="rc-cost">${costHtml}</div>
+      <div class="rc-train-row">
+        <input class="rc-input" type="number" id="qty-${t.id}" min="1" value="1" max="999">
+        <button class="btn-train" onclick="trainTroop('${t.id}')">Entraîner</button>
+      </div>` : `<p style="font-size:.75rem;color:var(--parch-dim);font-style:italic;margin-top:.3rem">${t.desc}</p>`}
+    `;
+    grid.appendChild(card);
+  });
+  renderTrainQueue();
+}
+
+function trainTroop(id) {
+  const t = TROOPS_DEF.find(x=>x.id===id);
+  const qty = parseInt(document.getElementById('qty-'+id)?.value)||1;
+  const totalCost = {};
+  Object.entries(t.cost).forEach(([r,v])=>{ totalCost[r]=(totalCost[r]||0)+v*qty; });
+
+  if(!Object.entries(totalCost).every(([r,v])=>(state.resources[r]||0)>=v)) {
+    toast('❌ Ressources insuffisantes','d'); return;
+  }
+  Object.entries(totalCost).forEach(([r,v])=>{ state.resources[r]-=v; });
+  state.trainQueue.push({ id, name:t.name, icon:t.icon, qty, ticksLeft:t.trainTime*qty, total:t.trainTime*qty });
+  updateRes();
+  renderRecruitGrid();
+  toast(`⚔ ${qty} ${t.name}(s) en entraînement !`,'s');
+}
+
+function renderTrainQueue() {
+  const wrap = document.getElementById('train-queue-wrap');
+  if(!state.trainQueue.length) { wrap.innerHTML=''; return; }
+  let html = '<div class="train-queue"><div class="tq-title">🔨 File d\'entraînement</div>';
+  state.trainQueue.forEach((q,i) => {
+    const pct = ((q.total-q.ticksLeft)/q.total*100).toFixed(0);
+    html += `<div class="tq-item">
+      <span>${q.icon}</span>
+      <span style="font-size:.8rem;min-width:90px">${q.qty}× ${q.name}</span>
+      <div class="tq-bar-bg"><div class="tq-bar" style="width:${pct}%"></div></div>
+      <span style="font-size:.7rem;color:var(--parch-dim)">${q.ticksLeft}t</span>
+    </div>`;
+  });
+  html += '</div>';
+  wrap.innerHTML = html;
+}
+
+// ══════════════════════════════════════════
+//  HÉROS
+// ══════════════════════════════════════════
+function renderHeroSidebar() {
+  const h = state.hero;
+  const xpPct = (h.xp/h.xpNext*100).toFixed(0);
+  document.getElementById('lp-hero').innerHTML = `
+    <div style="text-align:center;margin:.5rem 0">
+      <div style="font-size:2.5rem;margin-bottom:.3rem">🪓</div>
+      <div style="font-family:'Uncial Antiqua',serif;color:var(--gold-light);font-size:.85rem">${h.name}</div>
+      <div style="font-size:.7rem;color:var(--parch-dim);margin-bottom:.5rem">Niv. ${h.level} · ${ROLES_NAMES[state.role]}</div>
+    </div>
+    <div class="hero-xp-bg" style="margin-bottom:.6rem">
+      <div class="hero-xp-fill" style="width:${xpPct}%"></div>
+    </div>
+    <div style="font-size:.68rem;color:var(--parch-dim);text-align:center;margin-bottom:.6rem">${h.xp}/${h.xpNext} XP</div>
+    <div class="sec-t">Stats</div>
+    <div style="display:flex;flex-direction:column;gap:.25rem">
+      <div style="display:flex;justify-content:space-between;font-size:.78rem"><span style="color:var(--parch-dim)">⚔ Attaque</span><span>${h.atk}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:.78rem"><span style="color:var(--parch-dim)">🛡 Défense</span><span>${h.def}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:.78rem"><span style="color:var(--parch-dim)">❤ HP</span><span>${h.hp}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:.78rem"><span style="color:var(--parch-dim)">✦ Points</span><span style="color:#c070e0">${h.talentPoints}</span></div>
+    </div>
+  `;
+}
+
+const ROLES_NAMES = { jarl:'Jarl', chaman:'Chaman', skald:'Skald', forge:'Forgeron' };
+
+function renderHeroPanel() {
+  const h = state.hero;
+  const xpPct = (h.xp/h.xpNext*100).toFixed(0);
+  const paths = HERO_TALENTS[state.role]||[];
+
+  let talentsHtml = '';
+  paths.forEach(path => {
+    talentsHtml += `<div class="talent-path-label">⚔ ${path.path}</div>`;
+    path.nodes.forEach(node => {
+      const learned = state.hero.learned.has(node.id);
+      const reqMet  = !node.requires || state.hero.learned.has(node.requires);
+      const canLearn = !learned && reqMet && state.hero.talentPoints >= node.cost;
+      const cls = learned?'learned':reqMet?'available':'locked-t';
+      const badge = learned?`<span class="t-badge done">Appris</span>`:
+                    reqMet?`<span class="t-badge avail">${node.cost}pt</span>`:
+                    `<span class="t-badge lock">🔒</span>`;
+      talentsHtml += `
+        <div class="talent-node ${cls}" onclick="${canLearn?`learnTalent('${node.id}')`:''}" title="${canLearn?'Cliquer pour apprendre':''}">
+          <span class="t-icon">${node.icon}</span>
+          <div class="t-body">
+            <div class="t-name">${node.name}</div>
+            <div class="t-desc">${node.desc}</div>
+          </div>
+          ${badge}
+        </div>`;
+    });
+  });
+
+  document.getElementById('hero-panel').innerHTML = `
+    <div class="hero-header">
+      <div class="hero-avatar">🪓</div>
+      <div class="hero-info">
+        <div class="hero-name">${h.name}</div>
+        <div class="hero-role">Niveau ${h.level} · ${ROLES_NAMES[state.role]}</div>
+        <div class="hero-xp-wrap">
+          <div class="hero-xp-label"><span>Expérience</span><span>${h.xp} / ${h.xpNext} XP</span></div>
+          <div class="hero-xp-bg"><div class="hero-xp-fill" style="width:${xpPct}%"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="hero-stats-grid">
+      <div class="hs-item"><div class="hs-label">Attaque</div><div class="hs-val">⚔ ${h.atk}</div></div>
+      <div class="hs-item"><div class="hs-label">Défense</div><div class="hs-val">🛡 ${h.def}</div></div>
+      <div class="hs-item"><div class="hs-label">HP</div><div class="hs-val">❤ ${h.hp}</div></div>
+      <div class="hs-item"><div class="hs-label">Vitesse</div><div class="hs-val">⚡ ${h.level}</div></div>
+      <div class="hs-item"><div class="hs-label">Victoires</div><div class="hs-val">🏆 ${state.reports.filter(r=>r.type==='victory').length}</div></div>
+      <div class="hs-item"><div class="hs-label">Moral</div><div class="hs-val" style="color:${state.moral>=60?'#6aaa50':state.moral>=30?'#d4a017':'#e74c3c'}">${state.moral}%</div></div>
+    </div>
+    <div class="tp-display">
+      <span>✦ Points de talent disponibles :</span>
+      <span class="tp-val">${h.talentPoints}</span>
+    </div>
+    <div class="talent-tree">${talentsHtml}</div>
+  `;
+}
+
+function learnTalent(id) {
+  const h = state.hero;
+  let node = null;
+  for(const paths of Object.values(HERO_TALENTS)) {
+    for(const path of paths) {
+      node = path.nodes.find(n=>n.id===id);
+      if(node) break;
+    }
+    if(node) break;
+  }
+  if(!node||h.learned.has(id)||h.talentPoints<node.cost) return;
+  h.learned.add(id);
+  h.talentPoints -= node.cost;
+  toast(`✦ Talent appris : ${node.name} !`,'s');
+  renderHeroPanel();
+  renderHeroSidebar();
+}
+
+// ══════════════════════════════════════════
+//  COMBAT
+// ══════════════════════════════════════════
+function renderCombatPanel() {
+  const totalTroops = Object.values(state.troops).reduce((s,v)=>s+v,0);
+
+  const troopsInputs = TROOPS_DEF.filter(t=>isUnlocked(t)&&(state.troops[t.id]||0)>0).map(t=>`
+    <div class="troop-deploy">
+      <span style="font-size:1rem">${t.icon}</span>
+      <span style="flex:1;font-size:.8rem">${t.name}</span>
+      <span class="deploy-max">(${state.troops[t.id]||0} dispo)</span>
+      <input class="deploy-input" type="number" id="deploy-${t.id}" min="0" max="${state.troops[t.id]||0}" value="${Math.floor((state.troops[t.id]||0)/2)}">
+    </div>`).join('');
+
+  const enemyOptions = ENEMIES.map(e=>`<option value="${e.id}">${e.icon} ${e.name} (ATK:${e.atk} DEF:${e.def} HP:${e.hp})</option>`).join('');
+
+  document.getElementById('combat-panel').innerHTML = `
+    <div class="combat-setup">
+      <div class="side-card">
+        <div class="side-title ally">🪓 Vos forces</div>
+        <div style="font-size:.75rem;color:var(--parch-dim);margin-bottom:.6rem;font-style:italic">
+          Héros : ${state.hero.name} (ATK ${state.hero.atk}, HP ${state.hero.hp})
+        </div>
+        ${troopsInputs||'<p style="color:var(--parch-dim);font-size:.8rem;font-style:italic">Entraînez des troupes d\'abord !</p>'}
+      </div>
+
+      <div class="vs-divider">
+        <div class="vs-text">VS</div>
+        <div style="font-size:1.5rem">⚔</div>
+      </div>
+
+      <div class="side-card">
+        <div class="side-title enemy">💀 Ennemi</div>
+        <select class="enemy-select" id="enemy-select" onchange="updateEnemyInfo()">
+          ${enemyOptions}
+        </select>
+        <div id="enemy-info-block"></div>
+      </div>
+    </div>
+
+    <button class="btn-fight" onclick="startBattle()" ${totalTroops===0?'disabled':''}>
+      ⚔ LANCER LA BATAILLE ⚔
+    </button>
+  `;
+  updateEnemyInfo();
+}
+
+function updateEnemyInfo() {
+  const sel = document.getElementById('enemy-select');
+  if(!sel) return;
+  const e = ENEMIES.find(x=>x.id===sel.value)||ENEMIES[0];
+  document.getElementById('enemy-info-block').innerHTML = `
+    <div class="enemy-stat-row"><span>⚔ Attaque</span><span>${e.atk}</span></div>
+    <div class="enemy-stat-row"><span>🛡 Défense</span><span>${e.def}</span></div>
+    <div class="enemy-stat-row"><span>❤ HP total</span><span>${e.hp}</span></div>
+    <div class="enemy-stat-row"><span>🏆 Gloire</span><span>+${e.glory}</span></div>
+    <div class="enemy-stat-row"><span>💰 Butin</span><span>${Object.entries(e.reward).map(([r,v])=>v+' '+({food:'🌾',wood:'🪵',stone:'🪨',gold:'🪙',runes:'ᚱ',souls:'☠',mead:'🍺'}[r]||r)).join(' ')}</span></div>
+  `;
+}
+
+// ══════════════════════════════════════════
+//  ANIMATION COMBAT
+// ══════════════════════════════════════════
+let battleData = null;
+let battleInterval = null;
+
+function startBattle() {
+  const sel = document.getElementById('enemy-select');
+  const enemy = ENEMIES.find(x=>x.id===sel?.value)||ENEMIES[0];
+
+  // Calcul puissance alliée
+  let allyAtk = state.hero.atk;
+  let allyDef = state.hero.def;
+  let allyHp  = state.hero.hp;
+
+  TROOPS_DEF.forEach(t => {
+    const n = parseInt(document.getElementById('deploy-'+t.id)?.value)||0;
+    allyAtk += n * t.atk;
+    allyDef += n * t.def;
+    allyHp  += n * t.hp;
+  });
+
+  // Modificateur moral
+  const moralMod = 0.7 + (state.moral/100)*0.6;
+  allyAtk = Math.floor(allyAtk * moralMod);
+
+  battleData = {
+    allyHp, allyMaxHp:allyHp,
+    allyAtk, allyDef,
+    enemyHp:enemy.hp, enemyMaxHp:enemy.hp,
+    enemyAtk:enemy.atk, enemyDef:enemy.def,
+    enemy, round:0, log:[],
+    allySprite: '🪓', enemySprite: enemy.sprite,
+    done:false,
+  };
+
+  // Setup arène
+  document.getElementById('fname-ally').textContent   = state.hero.name;
+  document.getElementById('fname-enemy').textContent  = enemy.name;
+  document.getElementById('sprite-ally').textContent  = '🪓';
+  document.getElementById('sprite-enemy').textContent = enemy.sprite;
+  document.getElementById('hp-ally').style.width   = '100%';
+  document.getElementById('hp-enemy').style.width  = '100%';
+  document.getElementById('battle-log').innerHTML  = '';
+  document.getElementById('arena-title').textContent = '⚔ ' + enemy.name + ' ⚔';
+  document.getElementById('btn-close-arena').style.display = 'none';
+
+  document.getElementById('battle-arena').classList.add('open');
+
+  battleInterval = setInterval(battleTick, 900);
+}
+
+function battleTick() {
+  if(!battleData||battleData.done) return;
+  battleData.round++;
+
+  const bd = battleData;
+  const logEl = document.getElementById('battle-log');
+
+  // Tour allié → ennemi
+  const allyDmg = Math.max(1, Math.floor(bd.allyAtk - bd.enemyDef/2 + (Math.random()*6-3)));
+  bd.enemyHp = Math.max(0, bd.enemyHp - allyDmg);
+
+  addBattleLog(`Tour ${bd.round} — ${state.hero.name} frappe : -${allyDmg} HP`, 'ally-line');
+  animateFighter('fighter-ally', 'attacking');
+  animateFighter('fighter-enemy', 'hit');
+  showDmg('fighter-enemy', allyDmg, '#6aaa50');
+
+  // Tour ennemi → allié
+  setTimeout(() => {
+    if(!battleData||bd.enemyHp<=0) return;
+    const enemyDmg = Math.max(1, Math.floor(bd.enemyAtk - bd.allyDef/2 + (Math.random()*6-3)));
+    bd.allyHp = Math.max(0, bd.allyHp - enemyDmg);
+    addBattleLog(`${bd.enemy.name} contre-attaque : -${enemyDmg} HP`, 'enemy-line');
+    animateFighter('fighter-enemy', 'attacking');
+    animateFighter('fighter-ally', 'hit');
+    showDmg('fighter-ally', enemyDmg, '#e74c3c');
+    updateHpBars();
+    checkBattleEnd();
+  }, 400);
+
+  updateHpBars();
+
+  // Événements spéciaux
+  if(bd.round===3 && state.hero.learned.has('j1'))
+    addBattleLog('✦ Lame Affûtée activée ! ATK bonus !','event-line');
+  if(bd.round===2 && state.hero.learned.has('c1'))
+    addBattleLog('🔥 Rune de Feu ! L\'ennemi brûle !','event-line');
+}
+
+function updateHpBars() {
+  const bd = battleData;
+  if(!bd) return;
+  const allyPct  = Math.max(0,bd.allyHp/bd.allyMaxHp*100);
+  const enemyPct = Math.max(0,bd.enemyHp/bd.enemyMaxHp*100);
+  const hpBar = el => el>=60?'#6aaa50':el>=30?'#d4a017':'#e74c3c';
+  const hpAlly  = document.getElementById('hp-ally');
+  const hpEnemy = document.getElementById('hp-enemy');
+  if(hpAlly)  { hpAlly.style.width=allyPct+'%';  hpAlly.style.background=hpBar(allyPct);  }
+  if(hpEnemy) { hpEnemy.style.width=enemyPct+'%'; hpEnemy.style.background=hpBar(enemyPct); }
+}
+
+function checkBattleEnd() {
+  const bd = battleData;
+  if(!bd||bd.done) return;
+  if(bd.allyHp<=0||bd.enemyHp<=0) {
+    bd.done = true;
+    clearInterval(battleInterval);
+    const won = bd.enemyHp<=0;
+    finalizeBattle(won);
+  }
+}
+
+function finalizeBattle(won) {
+  const bd = battleData;
+  document.getElementById('btn-close-arena').style.display='';
+
+  if(won) {
+    addBattleLog(`🏆 VICTOIRE ! ${bd.enemy.name} est vaincu !`,'event-line');
+    // Gain ressources
+    Object.entries(bd.enemy.reward).forEach(([r,v])=>{ state.resources[r]=(state.resources[r]||0)+v; });
+    state.glory += bd.enemy.glory;
+    state.hero.xp += bd.enemy.glory;
+    if(state.hero.xp>=state.hero.xpNext) {
+      state.hero.level++;
+      state.hero.xp -= state.hero.xpNext;
+      state.hero.xpNext = Math.floor(state.hero.xpNext*1.4);
+      state.hero.atk+=3; state.hero.def+=2; state.hero.hp+=20;
+      state.hero.talentPoints++;
+      addBattleLog(`⭐ LEVEL UP ! ${state.hero.name} passe Niv.${state.hero.level} !`,'event-line');
+    }
+    state.moral = Math.min(100, state.moral+10);
+    // Rapport
+    state.reports.unshift({
+      type:'victory', title:`Victoire contre ${bd.enemy.name}`,
+      text:`Après ${bd.round} rounds de combat acharné, votre armée triomphe ! Butin récupéré.`,
+      reward: bd.enemy.reward, losses:{militia:0}, glory:bd.enemy.glory,
+      time: new Date().toLocaleTimeString('fr-FR'),
+    });
+  } else {
+    addBattleLog(`💀 DÉFAITE ! Votre armée est en déroute...`,'event-line');
+    // Pertes troupes
+    Object.keys(state.troops).forEach(t=>{
+      const loss = Math.floor((state.troops[t]||0)*0.3);
+      state.troops[t]=Math.max(0,(state.troops[t]||0)-loss);
+    });
+    state.moral = Math.max(0, state.moral-20);
+    state.reports.unshift({
+      type:'defeat', title:`Défaite contre ${bd.enemy.name}`,
+      text:`Votre armée n'a pas résisté. 30% de vos troupes sont tombées. Le moral chute.`,
+      losses:{militia:3,warrior:1}, glory:0,
+      time: new Date().toLocaleTimeString('fr-FR'),
+    });
+  }
+  updateRes();
+  updateMoral();
+}
+
+function skipBattle() {
+  if(!battleData||battleData.done) return;
+  clearInterval(battleInterval);
+  // Résolution instantanée
+  const bd = battleData;
+  const allyPower  = bd.allyAtk  * 3 + bd.allyDef  * 2 + bd.allyHp;
+  const enemyPower = bd.enemyAtk * 3 + bd.enemyDef  * 2 + bd.enemyHp;
+  const won = allyPower >= enemyPower * (0.8+Math.random()*.4);
+  bd.done = true;
+  finalizeBattle(won);
+  addBattleLog(won?'⚡ Résolution rapide — Victoire !':'⚡ Résolution rapide — Défaite.','event-line');
+  document.getElementById('btn-close-arena').style.display='';
+}
+
+function closeBattleArena() {
+  document.getElementById('battle-arena').classList.remove('open');
+  renderTroopList();
+  renderHeroPanel();
+  renderHeroSidebar();
+  renderReports();
+  renderCombatPanel();
+}
+
+function addBattleLog(text, cls) {
+  const log = document.getElementById('battle-log');
+  if(!log) return;
+  const line = document.createElement('div');
+  line.className = 'blog-line ' + (cls||'');
+  line.textContent = text;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+}
+
+function animateFighter(id, anim) {
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.classList.remove('attacking','hit');
+  void el.offsetWidth;
+  el.classList.add(anim);
+  setTimeout(()=>el.classList.remove(anim),400);
+}
+
+function showDmg(fighterId, dmg, color) {
+  const el = document.getElementById(fighterId);
+  if(!el) return;
+  const rect = el.getBoundingClientRect();
+  const d = document.createElement('div');
+  d.className = 'dmg-float';
+  d.textContent = '-'+dmg;
+  d.style.cssText = `left:${rect.left+rect.width/2-20}px;top:${rect.top}px;color:${color}`;
+  document.body.appendChild(d);
+  setTimeout(()=>d.remove(),1200);
+}
+
+function spawnArenaStars() {
+  const sky = document.getElementById('arena-sky');
+  for(let i=0;i<40;i++){
+    const s=document.createElement('div');
+    s.className='a-star';
+    s.style.cssText=`width:${1+Math.random()*2}px;height:${1+Math.random()*2}px;
+      left:${Math.random()*100}%;top:${Math.random()*100}%;
+      animation-delay:${Math.random()*3}s;animation-duration:${1.5+Math.random()*2}s`;
+    sky.appendChild(s);
+  }
+}
+
+// ══════════════════════════════════════════
+//  RAPPORTS
+// ══════════════════════════════════════════
+function renderReports() {
+  const list = document.getElementById('reports-list');
+  if(!state.reports.length) {
+    list.innerHTML = '<p style="color:var(--parch-dim);font-style:italic;padding:.5rem 0">Aucun rapport de bataille pour l\'instant.</p>';
+    return;
+  }
+  list.innerHTML = state.reports.slice(0,20).map(r=>`
+    <div class="report-card ${r.type}">
+      <div class="rc-header">
+        <div class="rc-title ${r.type}">${r.type==='victory'?'🏆':'💀'} ${r.title}</div>
+        <div class="rc-time">${r.time}</div>
+      </div>
+      <div class="rc-body">${r.text}</div>
+      <div class="rc-losses">
+        ${r.glory>0?`<span class="gain-chip">+${r.glory} Gloire</span>`:''}
+        ${r.reward?Object.entries(r.reward).filter(([,v])=>v>0).map(([k,v])=>`<span class="gain-chip">+${v} ${{food:'🌾',wood:'🪵',stone:'🪨',gold:'🪙',runes:'ᚱ',souls:'☠',mead:'🍺'}[k]||k}</span>`).join(''):''}
+        ${r.losses?Object.entries(r.losses).filter(([,v])=>v>0).map(([k,v])=>`<span class="loss-chip">-${v} ${TROOPS_DEF.find(t=>t.id===k)?.name||k}</span>`).join(''):''}
+      </div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════
+//  UI & BOUCLE
+// ══════════════════════════════════════════
+function updateRes() {
+  const r=state.resources;
+  ['wood','stone','food','gold','runes','mead'].forEach(k=>{
+    const el=document.getElementById('r-'+k);
+    if(el) el.textContent=Math.floor(r[k]||0);
+  });
+}
+
+function updateMoral() {
+  const m=state.moral;
+  const bar=document.getElementById('moral-bar');
+  const val=document.getElementById('moral-val');
+  const col=m>=60?'#6aaa50':m>=30?'#d4a017':'#e74c3c';
+  if(bar){bar.style.width=m+'%';bar.style.background=col}
+  if(val){val.textContent=m;val.style.color=col}
+}
+
+function toast(msg,type){
+  const c=document.getElementById('toasts');
+  const el=document.createElement('div');
+  el.className='toast'+(type?' '+type:'');
+  el.textContent=msg;
+  c.appendChild(el);
+  setTimeout(()=>el.remove(),4000);
+}
+
+// Boucle production + file entraînement
+setInterval(()=>{
+  state.tick++;
+  if(state.tick%8===0){
+    state.resources.food +=8;
+    state.resources.wood +=6;
+    state.resources.stone+=4;
+    state.resources.gold +=2;
+    updateRes();
+  }
+  // File d'entraînement
+  if(state.trainQueue.length){
+    state.trainQueue[0].ticksLeft--;
+    if(state.trainQueue[0].ticksLeft<=0){
+      const q=state.trainQueue.shift();
+      state.troops[q.id]=(state.troops[q.id]||0)+q.qty;
+      toast(`✦ +${q.qty} ${q.name}(s) prêts au combat !`,'s');
+      renderTroopList();
+      renderRecruitGrid();
+    } else renderTrainQueue();
+  }
+  // Moral (lente récupération)
+  if(state.tick%60===0 && state.moral<100){
+    state.moral=Math.min(100,state.moral+2);
+    updateMoral();
+  }
+},1000);
+
+init();
+setTimeout(()=>toast('⚔ Recrutez vos guerriers et partez au combat !'),500);
+</script>
+</body>
+</html>
