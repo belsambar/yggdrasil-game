@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YGGDRASIL — Quêtes</title>
+<link href="https://fonts.googleapis.com/css2?family=Uncial+Antiqua&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#0e0a04;--parch:#d4b896;--parch-dim:#8a7055;--parch-light:#f0dfc0;--gold:#c8960c;--gold-light:#f0c040;--gold-glow:rgba(200,150,12,.5);--blood:#8b1a1a;--blood-bright:#e74c3c;--moss:#4a7a35;--moss-light:#6aaa50;--purple:#8e44ad;--frost:#4a9abb;--autumn:#c8640c;--winter:#5a8ab0;--border:rgba(200,150,12,.22);--panel:rgba(14,10,4,.95)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'IM Fell English',Georgia,serif;background:var(--ink);color:var(--parch);overflow:hidden}
+#bg{position:fixed;inset:0;z-index:0;background:radial-gradient(ellipse at 25% 75%,rgba(200,150,12,.05),transparent 55%),radial-gradient(ellipse at 75% 25%,rgba(142,68,173,.04),transparent 55%),#0e0a04}
+.bg-rune{position:absolute;font-size:7rem;opacity:.016;color:var(--gold);animation:rf 22s ease-in-out infinite;pointer-events:none}
+@keyframes rf{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px) rotate(3deg)}}
+
+/* TOPBAR */
+#topbar{position:relative;z-index:100;background:rgba(8,5,1,.97);border-bottom:1px solid var(--border);padding:.38rem .9rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;box-shadow:0 2px 20px rgba(0,0,0,.8)}
+.logo{font-family:'Uncial Antiqua',serif;font-size:1.1rem;color:var(--gold);letter-spacing:3px;text-shadow:0 0 15px var(--gold-glow);text-decoration:none;flex-shrink:0}
+.logo span{font-size:.5rem;display:block;color:var(--parch-dim);letter-spacing:3px}
+.sep{width:1px;height:24px;background:var(--border);flex-shrink:0}
+.res{display:flex;align-items:center;gap:.2rem;background:rgba(200,150,12,.06);border:1px solid var(--border);border-radius:3px;padding:.15rem .4rem;font-size:.75rem}
+.res .v{color:var(--parch-light);font-weight:600;min-width:20px}
+.res.rare .v{color:var(--gold-light)}
+.nav-links{margin-left:auto;display:flex;gap:.35rem}
+.nav-link{font-family:'Uncial Antiqua',serif;font-size:.62rem;letter-spacing:1px;color:var(--parch-dim);text-decoration:none;padding:.22rem .55rem;border:1px solid var(--border);border-radius:3px;transition:all .2s}
+.nav-link:hover,.nav-link.active{color:var(--gold);border-color:rgba(200,150,12,.5);background:rgba(200,150,12,.07)}
+
+/* LAYOUT */
+#main{position:relative;z-index:10;display:flex;height:calc(100vh - 44px);overflow:hidden}
+
+/* LEFT PANEL */
+#left{width:230px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.filter-tabs{display:flex;flex-wrap:wrap;padding:.5rem .5rem .2rem;gap:.3rem;border-bottom:1px solid var(--border)}
+.ftab{font-size:.6rem;letter-spacing:1px;text-transform:uppercase;padding:.28rem .6rem;border:1px solid var(--border);border-radius:12px;cursor:pointer;color:var(--parch-dim);transition:all .2s;white-space:nowrap}
+.ftab:hover{color:var(--parch)}.ftab.active{color:var(--gold);border-color:rgba(200,150,12,.6);background:rgba(200,150,12,.1)}
+.quest-list{flex:1;overflow-y:auto;padding:.5rem}
+.quest-list::-webkit-scrollbar{width:3px}.quest-list::-webkit-scrollbar-thumb{background:var(--border)}
+.quest-item{padding:.55rem .65rem;border:1px solid var(--border);border-radius:4px;margin-bottom:.35rem;cursor:pointer;transition:all .18s;position:relative;overflow:hidden}
+.quest-item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:2px 0 0 2px}
+.quest-item.solo::before{background:var(--gold)}
+.quest-item.coop::before{background:var(--moss-light)}
+.quest-item.seasonal::before{background:var(--autumn)}
+.quest-item.divine::before{background:var(--purple)}
+.quest-item:hover{border-color:rgba(200,150,12,.5);background:rgba(200,150,12,.04)}
+.quest-item.selected{border-color:var(--gold);background:rgba(200,150,12,.08)}
+.quest-item.completed{opacity:.5}
+.quest-item.completed::after{content:'✓';position:absolute;right:.5rem;top:.4rem;color:var(--moss-light);font-size:.85rem}
+.qi-name{font-family:'Uncial Antiqua',serif;font-size:.78rem;color:var(--parch-light);margin-bottom:.18rem;padding-right:1rem}
+.qi-meta{display:flex;align-items:center;gap:.3rem;font-size:.64rem;color:var(--parch-dim)}
+.qi-tag{padding:.1rem .35rem;border-radius:8px;font-size:.6rem;border:1px solid}
+.qi-tag.solo{color:var(--gold);border-color:rgba(200,150,12,.4)}
+.qi-tag.coop{color:var(--moss-light);border-color:rgba(106,170,80,.4)}
+.qi-tag.seasonal{color:var(--autumn);border-color:rgba(200,100,12,.4)}
+.qi-tag.divine{color:#c070e0;border-color:rgba(142,68,173,.4)}
+.qi-prog{background:rgba(0,0,0,.4);border-radius:2px;height:3px;margin-top:.3rem;overflow:hidden}
+.qi-prog-fill{height:100%;border-radius:2px}
+
+/* RIGHT PANEL */
+#right{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.quest-detail{flex:1;overflow-y:auto;padding:1.2rem 1.5rem}
+.quest-detail::-webkit-scrollbar{width:4px}.quest-detail::-webkit-scrollbar-thumb{background:var(--border)}
+
+/* EMPTY STATE */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:.8rem;color:var(--parch-dim)}
+.empty-icon{font-size:3rem;opacity:.3}
+
+/* QUEST DETAIL */
+.qd-banner{background:linear-gradient(135deg,rgba(14,10,4,.98),rgba(30,20,5,.95));border:1px solid var(--border);border-radius:6px;padding:1.2rem 1.5rem;margin-bottom:1rem;position:relative;overflow:hidden}
+.qd-banner::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+.qd-banner.coop::after{background:linear-gradient(90deg,transparent,var(--moss-light),transparent)}
+.qd-banner.seasonal::after{background:linear-gradient(90deg,transparent,var(--autumn),transparent)}
+.qd-banner.divine::after{background:linear-gradient(90deg,transparent,#c070e0,transparent)}
+.qd-header{display:flex;align-items:flex-start;gap:.9rem;margin-bottom:.7rem}
+.qd-icon{font-size:2.8rem;filter:drop-shadow(0 2px 8px rgba(0,0,0,.6));flex-shrink:0}
+.qd-titles{flex:1}
+.qd-type{font-size:.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--parch-dim);margin-bottom:.2rem}
+.qd-name{font-family:'Uncial Antiqua',serif;font-size:1.3rem;color:var(--gold-light);letter-spacing:2px;line-height:1.2}
+.qd-season{font-size:.72rem;font-style:italic;color:var(--parch-dim);margin-top:.2rem}
+.qd-desc{font-size:.85rem;color:var(--parch);line-height:1.8;font-style:italic;border-left:2px solid rgba(200,150,12,.3);padding-left:.8rem}
+
+/* OBJECTIFS */
+.objectives-list{display:flex;flex-direction:column;gap:.45rem;margin-bottom:1rem}
+.obj-item{display:flex;align-items:center;gap:.7rem;padding:.5rem .7rem;border:1px solid var(--border);border-radius:4px;background:rgba(14,10,4,.6);transition:border-color .2s}
+.obj-item.done{border-color:rgba(106,170,80,.4);background:rgba(74,122,53,.06)}
+.obj-item.done .obj-name{color:var(--moss-light);text-decoration:line-through;text-decoration-color:rgba(106,170,80,.5)}
+.obj-check{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.7rem;flex-shrink:0;transition:all .2s}
+.obj-item.done .obj-check{border-color:var(--moss-light);background:rgba(74,122,53,.2);color:var(--moss-light)}
+.obj-body{flex:1}
+.obj-name{font-size:.82rem;color:var(--parch);margin-bottom:.2rem}
+.obj-progress{font-size:.68rem;color:var(--parch-dim)}
+.obj-bar-bg{background:rgba(0,0,0,.4);border-radius:2px;height:4px;margin-top:.25rem;overflow:hidden}
+.obj-bar-fill{height:100%;border-radius:2px;transition:width .5s}
+
+/* RÉCOMPENSES */
+.rewards-grid{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem}
+.reward-chip{display:flex;align-items:center;gap:.3rem;background:rgba(200,150,12,.08);border:1px solid rgba(200,150,12,.25);border-radius:4px;padding:.35rem .7rem;font-size:.8rem}
+.reward-chip.special{background:rgba(142,68,173,.1);border-color:rgba(142,68,173,.35);color:#c070e0}
+.reward-chip.glory{background:rgba(200,150,12,.12);border-color:rgba(200,150,12,.5);color:var(--gold-light)}
+
+/* DIALOGUE */
+.dialogue-wrap{background:rgba(5,2,0,.97);border:1px solid rgba(142,68,173,.3);border-radius:6px;overflow:hidden;margin-bottom:1rem}
+.dialogue-header{display:flex;align-items:center;gap:.7rem;padding:.7rem 1rem;background:rgba(142,68,173,.08);border-bottom:1px solid rgba(142,68,173,.2)}
+.dialogue-avatar{font-size:1.8rem;filter:drop-shadow(0 0 10px rgba(142,68,173,.5))}
+.dialogue-god{font-family:'Uncial Antiqua',serif;font-size:.9rem;color:#c070e0;letter-spacing:1px}
+.dialogue-epithet{font-size:.65rem;color:var(--parch-dim);font-style:italic}
+.dialogue-body{padding:.9rem 1rem;font-size:.84rem;color:var(--parch);line-height:1.85;font-style:italic}
+.dialogue-body p{margin-bottom:.5rem}
+.dialogue-body p:last-child{margin-bottom:0}
+.dialogue-choices{padding:.5rem 1rem .8rem;display:flex;flex-direction:column;gap:.35rem}
+.choice-btn{background:rgba(142,68,173,.07);border:1px solid rgba(142,68,173,.25);border-radius:3px;padding:.42rem .8rem;font-family:'IM Fell English',serif;font-size:.8rem;color:var(--parch);cursor:pointer;text-align:left;transition:all .2s}
+.choice-btn:hover{background:rgba(142,68,173,.18);border-color:rgba(192,112,224,.5);color:var(--parch-light)}
+.choice-btn.selected{background:rgba(142,68,173,.2);border-color:#c070e0;color:#c070e0}
+
+/* PROGRESSION SECTION */
+.prog-section{background:rgba(14,10,4,.8);border:1px solid var(--border);border-radius:5px;padding:.9rem 1rem;margin-bottom:1rem}
+.prog-title{font-family:'Uncial Antiqua',serif;font-size:.82rem;color:var(--gold-light);margin-bottom:.6rem;letter-spacing:1px}
+.prog-bar-wrap{display:flex;align-items:center;gap:.7rem;margin-bottom:.3rem}
+.prog-bar-bg{flex:1;background:rgba(0,0,0,.5);border-radius:4px;height:10px;overflow:hidden;border:1px solid rgba(200,150,12,.15)}
+.prog-bar-fill{height:100%;border-radius:4px;transition:width .6s ease}
+.prog-pct{font-size:.75rem;color:var(--gold);font-weight:600;flex-shrink:0;min-width:35px}
+.prog-hint{font-size:.68rem;color:var(--parch-dim);font-style:italic}
+
+/* BOUTON PRINCIPAL */
+.btn-main{width:100%;padding:.6rem;font-family:'Uncial Antiqua',serif;font-size:.88rem;letter-spacing:2px;border-radius:4px;cursor:pointer;transition:all .25s;margin-bottom:.5rem}
+.btn-start{background:linear-gradient(135deg,rgba(200,150,12,.18),rgba(200,150,12,.06));border:1px solid rgba(200,150,12,.6);color:var(--gold)}
+.btn-start:hover{background:rgba(200,150,12,.28);box-shadow:0 0 15px var(--gold-glow)}
+.btn-claim{background:linear-gradient(135deg,rgba(74,122,53,.2),rgba(74,122,53,.08));border:1px solid rgba(106,170,80,.6);color:var(--moss-light)}
+.btn-claim:hover{background:rgba(74,122,53,.3);box-shadow:0 0 12px rgba(106,170,80,.3)}
+.btn-disabled{opacity:.35;cursor:not-allowed;background:rgba(0,0,0,.3);border:1px solid var(--border);color:var(--parch-dim)}
+
+/* SAISON BANNER */
+.season-banner{display:flex;align-items:center;gap:.7rem;padding:.5rem .9rem;border-radius:4px;margin-bottom:.8rem;font-size:.8rem}
+.season-banner.spring{background:rgba(74,150,53,.1);border:1px solid rgba(74,150,53,.3);color:#80cc60}
+.season-banner.summer{background:rgba(200,180,12,.1);border:1px solid rgba(200,180,12,.3);color:#e8d040}
+.season-banner.autumn{background:rgba(200,100,12,.1);border:1px solid rgba(200,100,12,.3);color:var(--autumn)}
+.season-banner.winter{background:rgba(90,138,176,.1);border:1px solid rgba(90,138,176,.3);color:var(--winter)}
+
+/* TOAST */
+#toasts{position:fixed;bottom:1.2rem;right:1.2rem;z-index:9999;display:flex;flex-direction:column;gap:.4rem;pointer-events:none}
+.toast{background:rgba(8,5,1,.97);border:1px solid var(--gold);border-radius:3px;padding:.45rem .9rem;font-size:.82rem;color:var(--parch-light);box-shadow:0 4px 20px rgba(0,0,0,.7);animation:tIn .3s cubic-bezier(.34,1.56,.64,1),tOut .3s ease 3.5s forwards;max-width:290px}
+.toast.s{border-color:var(--moss-light)}.toast.d{border-color:var(--blood-bright)}.toast.divine{border-color:#c070e0}
+@keyframes tIn{from{opacity:0;transform:translateX(30px)}}
+@keyframes tOut{to{opacity:0;transform:translateX(30px)}}
+
+@media(max-width:680px){#left{display:none}}
+</style>
+</head>
+<body>
+<div id="bg"><div class="bg-rune" style="top:5%;left:3%">ᚠ</div><div class="bg-rune" style="top:62%;left:87%;animation-delay:-11s">ᚢ</div></div>
+
+<div id="topbar">
+  <a class="logo" href="yggdrasil-carte.html">YGGDRASIL<span>⁂ quêtes ⁂</span></a>
+  <div class="sep"></div>
+  <div style="display:flex;gap:.28rem;flex-wrap:wrap">
+    <div class="res"><span>🪵</span><span class="v" id="r-wood">480</span></div>
+    <div class="res"><span>🪨</span><span class="v" id="r-stone">320</span></div>
+    <div class="res"><span>🌾</span><span class="v" id="r-food">610</span></div>
+    <div class="res"><span>🪙</span><span class="v" id="r-gold">145</span></div>
+    <div class="res rare"><span>ᚱ</span><span class="v" id="r-runes">12</span></div>
+    <div class="res rare"><span>⭐</span><span class="v" id="r-glory">1240</span></div>
+  </div>
+  <div class="nav-links">
+    <a class="nav-link" href="yggdrasil-carte.html">🗺 Carte</a>
+    <a class="nav-link" href="yggdrasil-village.html">🏘 Village</a>
+    <a class="nav-link" href="yggdrasil-armee.html">⚔ Armée</a>
+    <a class="nav-link" href="yggdrasil-alliance.html">🤝 Alliance</a>
+    <a class="nav-link active" href="#">📜 Quêtes</a>
+  </div>
+</div>
+
+<div id="main">
+  <div id="left">
+    <div class="filter-tabs" id="filter-tabs">
+      <div class="ftab active" onclick="setFilter('all',this)">Toutes</div>
+      <div class="ftab" onclick="setFilter('solo',this)">Solo</div>
+      <div class="ftab" onclick="setFilter('coop',this)">Coop</div>
+      <div class="ftab" onclick="setFilter('seasonal',this)">Saisonnier</div>
+      <div class="ftab" onclick="setFilter('divine',this)">Divin</div>
+    </div>
+    <div class="quest-list" id="quest-list"></div>
+  </div>
+  <div id="right">
+    <div class="quest-detail" id="quest-detail">
+      <div class="empty-state">
+        <div class="empty-icon">📜</div>
+        <div style="font-family:'Uncial Antiqua',serif;font-size:.95rem;color:var(--parch-dim)">Choisissez une quête</div>
+        <div style="font-size:.78rem;color:var(--parch-dim);font-style:italic;text-align:center;max-width:280px">Les destins tissés par les Nornes vous attendent dans la liste.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+const RES_ICONS={food:'🌾',wood:'🪵',stone:'🪨',gold:'🪙',runes:'ᚱ',souls:'☠',mead:'🍺',glory:'⭐',talentPts:'✦'};
+const SEASONS=['spring','summer','autumn','winter'];
+const SEASON_LABELS={spring:'Printemps 🌱',summer:'Été ☀',autumn:'Automne 🍂',winter:'Hiver ❄'};
+
+const state={
+  role:'jarl',player:'Ragnar Lothbrok',season:'autumn',
+  resources:{wood:480,stone:320,food:610,gold:145,runes:12,souls:3,mead:28},
+  glory:1240,talentPoints:3,
+  tick:0,
+  dialogueChoices:{},
+};
+
+// ═══════════════════════════════════════
+//  BASE DE DONNÉES DES QUÊTES
+// ═══════════════════════════════════════
+const QUESTS=[
+
+  // ── SOLO JARL ──
+  {id:'jarl_first_blood', type:'solo', role:'jarl', icon:'🪓',
+   name:'Le Premier Sang',
+   season:null,
+   shortDesc:'Prouvez votre valeur en combat',
+   desc:'Tout Jarl digne de ce nom doit tremper sa hache dans le sang ennemi avant que le soleil se couche. Les clans voisins observent. Montrez-leur de quoi vous êtes capable.',
+   objectives:[
+     {id:'o1',name:'Vaincre 3 ennemis en combat',current:2,target:3,type:'combat'},
+     {id:'o2',name:'Recruter 10 guerriers',current:8,target:10,type:'recruit'},
+   ],
+   rewards:{gold:80,runes:2,glory:60,talentPts:1},
+   state:'active',
+   dialogue:{god:'Odin',avatar:'🦅',epithet:'Le Père de Tous · Allfather',
+     lines:[`Ah, jeune Jarl. Je t'ai observé depuis Hlidskjalf, mon trône au sommet de l'Asgard.`,
+            `Les Nornes ont tissé un destin de sang et de gloire pour toi. Mais le destin ne s'accomplit pas par la contemplation.`,
+            `Lève ta hache. Prouve que tu mérites la place que je t'ai réservée au Valhalla.`],
+     choices:['Père de Tous, je ne faillirai pas.','Et si je refuse votre quête ?','Quelle récompense m\'attendrait ?']}},
+
+  {id:'jarl_longship', type:'solo', role:'jarl', icon:'🚢',
+   name:'Le Drakkar des Ancêtres',
+   season:null,
+   shortDesc:'Construire un drakkar de guerre',
+   desc:'Un Jarl sans drakkar est un aigle sans ailes. Rassemblez le bois sacré et les clous d\'or pour construire un navire digne de vos ancêtres.',
+   objectives:[
+     {id:'o1',name:'Récolter 500 Bois',current:480,target:500,type:'resource'},
+     {id:'o2',name:'Récolter 50 Or',current:45,target:50,type:'resource'},
+     {id:'o3',name:'Construire la Caserne Niv.3',current:1,target:1,type:'build'},
+   ],
+   rewards:{wood:0,runes:3,glory:80,mead:15},
+   state:'active'},
+
+  // ── SOLO CHAMAN ──
+  {id:'chaman_runes', type:'solo', role:'chaman', icon:'ᚱ',
+   name:'Les Runes Oubliées',
+   season:null,
+   shortDesc:'Déchiffrer les runes anciennes',
+   desc:'Dans les profondeurs de Jötunheim, des runes d\'un pouvoir incommensurable attendentcelui qui osera les chercher. Le chemin est semé de créatures de l\'ombre.',
+   objectives:[
+     {id:'o1',name:'Accumuler 15 Runes',current:12,target:15,type:'resource'},
+     {id:'o2',name:'Survivre 5 vagues ennemies',current:3,target:5,type:'combat'},
+   ],
+   rewards:{runes:8,glory:100,talentPts:2},
+   state:'active',
+   dialogue:{god:'Odin',avatar:'🦅',epithet:'Le Dieu des Runes · Rúnatýr',
+     lines:[`Je me suis pendu neuf jours à Yggdrasil, le corps percé de ma propre lance, pour arracher les runes à l'obscurité.`,
+            `Ces symboles ne sont pas de simples marques. Ils sont la trame même de la réalité. En les maîtrisant, tu plies le destin à ta volonté.`,
+            `Va chercher les runes oubliées. Mais sache ceci — certaines vérités brisent l'esprit de ceux qui ne sont pas prêts.`],
+     choices:['Je suis prêt, Allfather.','Pourquoi moi ?','Quels dangers m\'attendent ?']}},
+
+  // ── SOLO SKALD ──
+  {id:'skald_saga', type:'solo', role:'skald', icon:'📜',
+   name:'La Grande Saga',
+   season:null,
+   shortDesc:'Composer l\'épopée de votre alliance',
+   desc:'Les actes de votre alliance doivent être immortalisés dans une saga digne d\'être chantée dans les salles du Valhalla. Accompagnez vos alliés dans leurs exploits et tissez les vers.',
+   objectives:[
+     {id:'o1',name:'Participer à 3 batailles alliées',current:2,target:3,type:'combat'},
+     {id:'o2',name:'Accumuler 500 Gloire',current:1240,target:500,type:'glory'},
+     {id:'o3',name:'Envoyer 5 messages en chat d\'alliance',current:3,target:5,type:'chat'},
+   ],
+   rewards:{glory:150,mead:20,talentPts:2},
+   state:'active'},
+
+  // ── SOLO FORGERON ──
+  {id:'forge_masterwork', type:'solo', role:'forge', icon:'🔨',
+   name:'L\'Œuvre du Maître',
+   season:null,
+   shortDesc:'Forger une arme légendaire',
+   desc:'Un Forgeron n\'est jugé qu\'à ses créations. L\'arme que vous allez façonner devra surpasser tout ce qui a été créé avant vous — digne des dieux eux-mêmes.',
+   objectives:[
+     {id:'o1',name:'Collecter 200 Pierre',current:320,target:200,type:'resource'},
+     {id:'o2',name:'Améliorer 3 bâtiments',current:2,target:3,type:'build'},
+     {id:'o3',name:'Avoir 5 Runes en stock',current:12,target:5,type:'resource'},
+   ],
+   rewards:{runes:4,glory:120,stone:100,talentPts:1},
+   state:'active'},
+
+  // ── COOP ──
+  {id:'coop_fenrir', type:'coop', role:null, icon:'🐺',
+   name:'Enchaîner Fenrir',
+   season:null,
+   shortDesc:'Défier le Loup des Dieux ensemble',
+   desc:'Fenrir, fils de Loki, a brisé ses chaînes et rôde aux portes de Midgard. Aucun Jarl seul ne peut l\'affronter. Unissez vos armées, mêlez vos runes, pour forger de nouvelles chaînes de Gleipnir.',
+   objectives:[
+     {id:'o1',name:'Les deux joueurs ont 20+ guerriers',current:8,target:20,type:'recruit',coop:true},
+     {id:'o2',name:'Accumuler 20 Runes combinées',current:12,target:20,type:'resource',coop:true},
+     {id:'o3',name:'Vaincre Fenrir (combat spécial)',current:0,target:1,type:'boss'},
+   ],
+   rewards:{glory:200,runes:10,souls:5,mead:30},
+   state:'available',
+   dialogue:{god:'Thor',avatar:'⚡',epithet:'Le Dieu du Tonnerre · Þórr',
+     lines:[`Par Mjöllnir ! Fenrir a brisé Gleipnir comme un fil de soie mouillé.`,
+            `Même moi je ne pourrais l'affronter seul. Il faut deux héros, deux villages, deux destinées fusionnées en une seule lance.`,
+            `Forgez de nouvelles chaînes. Réunissez vos runes. Et quand le moment viendra — frappez ensemble, sans hésitation.`],
+     choices:['Nous sommes prêts, Thor.','De quoi avons-nous besoin ?','Que se passe-t-il si nous échouons ?']}},
+
+  {id:'coop_jotunheim', type:'coop', role:null, icon:'🏔',
+   name:'L\'Expédition en Jötunheim',
+   season:null,
+   shortDesc:'Explorer le royaume des géants',
+   desc:'Jötunheim s\'étend au-delà des frontières connues de Midgard. Ses géants gardent des trésors de pierre et de runes anciennes. Une expédition à deux est la seule façon de revenir vivant.',
+   objectives:[
+     {id:'o1',name:'Avoir exploré 50% de la carte',current:35,target:50,type:'explore'},
+     {id:'o2',name:'Vaincre 2 géants ensemble',current:0,target:2,type:'combat',coop:true},
+     {id:'o3',name:'Ramener 300 Pierre de Jötunheim',current:0,target:300,type:'resource'},
+   ],
+   rewards:{stone:500,glory:180,runes:6},
+   state:'available'},
+
+  {id:'coop_yggdrasil', type:'coop', role:null, icon:'🌳',
+   name:'Nourrir Yggdrasil',
+   season:null,
+   shortDesc:'La grande quête finale',
+   desc:'L\'Arbre du Monde s\'affaiblit. Níðhöggr ronge ses racines depuis les profondeurs de Niflheim. Pour le sauver — et sauver les Neuf Mondes — votre alliance doit accomplir l\'impossible : rassembler les offrandes des neuf royaumes.',
+   objectives:[
+     {id:'o1',name:'Atteindre Niv.5 d\'alliance',current:2,target:5,type:'level'},
+     {id:'o2',name:'Construire les 4 monuments',current:1,target:4,type:'build',coop:true},
+     {id:'o3',name:'Accumuler 5000 Gloire combinée',current:2780,target:5000,type:'glory',coop:true},
+     {id:'o4',name:'Repousser la Vague du Ragnarök',current:0,target:1,type:'boss'},
+   ],
+   rewards:{glory:1000,runes:25,souls:10,mead:50},
+   state:'locked',
+   dialogue:{god:'Odin',avatar:'🦅',epithet:'Le Père de Tous · Allfather',
+     lines:[`Je vais vous confier un secret que même les dieux redoutent d'entendre.`,
+            `Le Ragnarök approche. Níðhöggr ronge les racines d'Yggdrasil. Les Neuf Mondes vacillent sur leurs fondations.`,
+            `Vous deux — vous êtes notre seul espoir. Pas les dieux. Pas les Ases. Vous, mortels, portez le destin du monde entre vos mains calleuses.`,
+            `Alors... êtes-vous prêts à porter ce fardeau ?`],
+     choices:['Nous acceptons ce destin.','Pourquoi nous, de simples mortels ?','Y a-t-il un autre moyen ?']}},
+
+  // ── SAISONNIÈRES ──
+  {id:'autumn_provisions', type:'seasonal', role:null, icon:'🍂',
+   name:'Les Provisions d\'Hiver',
+   season:'autumn',
+   shortDesc:'Préparez-vous avant le gel',
+   desc:'L\'automne est là. Les feuilles tombent, et avec elles, la certitude que l\'hiver sera rude. Un village sans provisions est un village condamné. Remplissez vos greniers avant que la neige ne coupe les routes.',
+   objectives:[
+     {id:'o1',name:'Stocker 1000 Nourriture',current:610,target:1000,type:'resource'},
+     {id:'o2',name:'Stocker 20 Hydromel',current:28,target:20,type:'resource'},
+     {id:'o3',name:'Construire un bâtiment de production',current:1,target:1,type:'build'},
+   ],
+   rewards:{food:300,mead:15,glory:80},
+   state:'active',
+   urgency:true},
+
+  {id:'summer_raid', type:'seasonal', role:null, icon:'☀',
+   name:'La Grande Razzia d\'Été',
+   season:'summer',
+   shortDesc:'L\'été est la saison du pillage',
+   desc:'Les jours longs et les mers calmes font de l\'été la saison idéale pour les raids. Les clans voisins accumulent leurs richesses — il est temps d\'en profiter.',
+   objectives:[
+     {id:'o1',name:'Lancer 5 raids victorieux',current:0,target:5,type:'combat'},
+     {id:'o2',name:'Accumuler 200 Or via raids',current:0,target:200,type:'resource'},
+   ],
+   rewards:{gold:150,glory:100,runes:3},
+   state:'available'},
+
+  {id:'winter_magic', type:'seasonal', role:null, icon:'❄',
+   name:'La Nuit de Sköll',
+   season:'winter',
+   shortDesc:'Le loup Sköll dévore le soleil',
+   desc:'Une fois par hiver, le loup Sköll dévore le soleil. La nuit s\'étend sur tous les royaumes. Le Chaman voit à travers les ténèbres, le Skald compose ses plus belles sagas — mais tous doivent survivre.',
+   objectives:[
+     {id:'o1',name:'Survivre 3 nuits sans lumière (-50% prod)',current:0,target:3,type:'survive'},
+     {id:'o2',name:'Repousser 2 attaques nocturnes',current:0,target:2,type:'combat'},
+   ],
+   rewards:{runes:5,souls:3,glory:120,talentPts:1},
+   state:'locked'},
+
+  {id:'spring_rebirth', type:'seasonal', role:null, icon:'🌱',
+   name:'Le Réveil de Midgard',
+   season:'spring',
+   shortDesc:'Printemps : reconstruire et prospérer',
+   desc:'Après la rudesse de l\'hiver, Midgard renaît. C\'est le moment de réparer, de construire, d\'agrandir. La terre est fertile, les routes praticables — profitez-en.',
+   objectives:[
+     {id:'o1',name:'Construire 2 nouveaux bâtiments',current:0,target:2,type:'build'},
+     {id:'o2',name:'Produire 500 Bois au printemps',current:0,target:500,type:'resource'},
+     {id:'o3',name:'Moral à 80%+',current:75,target:80,type:'moral'},
+   ],
+   rewards:{wood:200,stone:150,glory:70},
+   state:'available'},
+
+  // ── DIVINES ──
+  {id:'divine_loki', type:'divine', role:null, icon:'🔥',
+   name:'L\'Épreuve de Loki',
+   season:null,
+   shortDesc:'Le Dieu du Chaos vous met à l\'épreuve',
+   desc:'Loki est apparu dans votre village, déguisé en marchand. Il vous propose un marché : relevez ses défis impossibles, et il vous accordera une faveur divine. Refusez… et il fera de votre existence un chaos.',
+   objectives:[
+     {id:'o1',name:'Accomplir 3 quêtes solo en 1 saison',current:1,target:3,type:'quest'},
+     {id:'o2',name:'Vaincre un ennemi avec 0 perte',current:0,target:1,type:'combat'},
+   ],
+   rewards:{runes:6,souls:4,glory:200,talentPts:2},
+   state:'active',
+   dialogue:{god:'Loki',avatar:'🔥',epithet:'L\'Escroc des Dieux · Skywalker',
+     lines:[`Hahahaha ! Te voilà enfin, petit Jarl. J\'avais parié avec Odin que tu ne viendrais jamais.`,
+            `Alors comme ça, tu penses être un héros ? Intéressant. Très… intéressant.`,
+            `Je vais te proposer un petit jeu. Accomplis mes défis — des choses qu'Odin lui-même ne t'aurait jamais demandées. En échange… disons que je serai généreux.`,
+            `Mais si tu échoues ? Oh, ne t'inquiète pas. Ce sera simplement… amusant pour moi. 😈`],
+     choices:['J\'accepte votre défi, Loki.','Je me méfie de vous.','Qu\'y a-t-il à gagner exactement ?']}},
+
+  {id:'divine_thor', type:'divine', role:null, icon:'⚡',
+   name:'La Bénédiction de Mjöllnir',
+   season:null,
+   shortDesc:'Méritez la faveur du Dieu du Tonnerre',
+   desc:'Thor a entendu parler de vos exploits sur les champs de bataille. Il vous convoque pour vous soumettre à l\'Épreuve du Tonnerre — un défi de force pure, d\'endurance et de courage.',
+   objectives:[
+     {id:'o1',name:'Vaincre un ennemi de niveau supérieur',current:0,target:1,type:'combat'},
+     {id:'o2',name:'Avoir 15+ guerriers actifs',current:8,target:15,type:'recruit'},
+     {id:'o3',name:'Moral des troupes à 70%+',current:75,target:70,type:'moral'},
+   ],
+   rewards:{glory:250,runes:5,talentPts:3},
+   state:'available',
+   dialogue:{god:'Thor',avatar:'⚡',epithet:'Le Dieu du Tonnerre · Þórr',
+     lines:[`J'ai entendu parler de toi, guerrier. Les Ravens d'Odin m'ont rapporté tes exploits.`,
+            `Mais les mots sont du vent. Je n'accorde ma faveur qu'à ceux qui prouvent leur valeur dans l'épreuve.`,
+            `Bats-toi comme si Valhalla était en jeu — parce que c'est littéralement le cas.`],
+     choices:['Je suis prêt, Thor.','Quelle récompense m\'accordez-vous ?','Que puis-je perdre ?']}},
+];
+
+// ═══════════════════════════════════════
+//  ÉTAT QUÊTES
+// ═══════════════════════════════════════
+const questStates={}; // id -> {dialogueLine, choiceMade}
+QUESTS.forEach(q=>{questStates[q.id]={dialogueLine:0,choiceMade:null}});
+
+let currentFilter='all',currentQuestId=null;
+
+// ═══════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════
+function init(){
+  renderQuestList();updateRes();
+  setTimeout(()=>toast('📜 3 nouvelles quêtes disponibles !','divine'),600);
+  setTimeout(()=>toast('🍂 Automne : provisions urgentes !','d'),1400);
+}
+
+// ═══════════════════════════════════════
+//  LISTE
+// ═══════════════════════════════════════
+function setFilter(f,el){
+  currentFilter=f;
+  document.querySelectorAll('.ftab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderQuestList();
+}
+
+function renderQuestList(){
+  const list=document.getElementById('quest-list');
+  let quests=QUESTS;
+  if(currentFilter!=='all') quests=quests.filter(q=>q.type===currentFilter);
+
+  // Tri : active > available > locked > completed
+  const order={active:0,available:1,locked:2,completed:3};
+  quests=[...quests].sort((a,b)=>(order[a.state]??2)-(order[b.state]??2));
+
+  list.innerHTML=quests.map(q=>{
+    const prog=getQuestProgress(q);
+    const barColor=q.type==='coop'?'var(--moss-light)':q.type==='divine'?'#c070e0':q.type==='seasonal'?'var(--autumn)':'var(--gold)';
+    return`<div class="quest-item ${q.type} ${q.state==='completed'?'completed':''} ${currentQuestId===q.id?'selected':''}" onclick="selectQuest('${q.id}')">
+      <div class="qi-name">${q.icon} ${q.name}</div>
+      <div class="qi-meta">
+        <span class="qi-tag ${q.type}">${q.type==='solo'?'Solo':q.type==='coop'?'Coop':q.type==='seasonal'?'Saison':'Divin'}</span>
+        ${q.season?`<span style="font-size:.62rem">${SEASON_LABELS[q.season]}</span>`:''}
+        ${q.urgency?'<span style="color:var(--blood-bright);font-size:.62rem">⚠ Urgent</span>':''}
+        <span style="font-size:.62rem;color:${q.state==='active'?'var(--gold)':q.state==='available'?'var(--moss-light)':q.state==='locked'?'var(--parch-dim)':'var(--moss-light)'}">${q.state==='active'?'En cours':q.state==='available'?'Disponible':q.state==='locked'?'🔒 Verrouillé':'✓ Terminé'}</span>
+      </div>
+      ${q.state!=='locked'&&q.state!=='completed'?`<div class="qi-prog"><div class="qi-prog-fill" style="width:${prog}%;background:${barColor}"></div></div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function getQuestProgress(q){
+  if(!q.objectives) return 0;
+  const total=q.objectives.reduce((s,o)=>s+o.target,0);
+  const done=q.objectives.reduce((s,o)=>s+Math.min(o.current,o.target),0);
+  return total>0?Math.floor(done/total*100):0;
+}
+
+// ═══════════════════════════════════════
+//  DETAIL
+// ═══════════════════════════════════════
+function selectQuest(id){
+  currentQuestId=id;
+  renderQuestList();
+  const q=QUESTS.find(x=>x.id===id);
+  if(!q)return;
+  renderQuestDetail(q);
+}
+
+function renderQuestDetail(q){
+  const qs=questStates[q.id];
+  const prog=getQuestProgress(q);
+  const allObjDone=q.objectives.every(o=>o.current>=o.target);
+  const typeLabels={solo:'Quête Solo',coop:'Quête Coopérative',seasonal:'Quête Saisonnière',divine:'Quête Divine'};
+  const barColor=q.type==='coop'?'var(--moss-light)':q.type==='divine'?'#c070e0':q.type==='seasonal'?'var(--autumn)':'var(--gold)';
+
+  let html=``;
+
+  // Bannière urgence saison
+  if(q.urgency){
+    html+=`<div class="season-banner autumn">⚠ Quête urgente — À compléter avant la fin de l'automne !</div>`;
+  }
+  if(q.season){
+    const sc={spring:'spring',summer:'summer',autumn:'autumn',winter:'winter'};
+    html+=`<div class="season-banner ${sc[q.season]}">${SEASON_LABELS[q.season]} — Quête disponible cette saison uniquement</div>`;
+  }
+
+  // Bannière principale
+  html+=`<div class="qd-banner ${q.type}">
+    <div class="qd-header">
+      <div class="qd-icon">${q.icon}</div>
+      <div class="qd-titles">
+        <div class="qd-type">${typeLabels[q.type]}${q.role?' · '+q.role.charAt(0).toUpperCase()+q.role.slice(1):''}</div>
+        <div class="qd-name">${q.name}</div>
+        ${q.season?`<div class="qd-season">${SEASON_LABELS[q.season]}</div>`:''}
+      </div>
+    </div>
+    <div class="qd-desc">"${q.desc}"</div>
+  </div>`;
+
+  // Dialogue divin
+  if(q.dialogue && q.state!=='locked'){
+    const d=q.dialogue;
+    const line=qs.dialogueLine||0;
+    const shownLines=d.lines.slice(0,line+1);
+    html+=`<div class="dialogue-wrap">
+      <div class="dialogue-header">
+        <div class="dialogue-avatar">${d.avatar}</div>
+        <div><div class="dialogue-god">${d.god}</div><div class="dialogue-epithet">${d.epithet}</div></div>
+      </div>
+      <div class="dialogue-body">
+        ${shownLines.map((l,i)=>`<p style="opacity:${i===shownLines.length-1?1:.65}">${l}</p>`).join('')}
+      </div>
+      ${line < d.lines.length-1
+        ?`<div class="dialogue-choices"><button class="choice-btn" onclick="advanceDialogue('${q.id}')">▶ Continuer…</button></div>`
+        :`<div class="dialogue-choices">
+          ${d.choices.map((c,i)=>`<button class="choice-btn ${qs.choiceMade===i?'selected':''}" onclick="makeChoice('${q.id}',${i})">${i===qs.choiceMade?'✓ ':''}"${c}"</button>`).join('')}
+         </div>`}
+    </div>`;
+  }
+
+  // Objectifs
+  html+=`<div class="sec-t" style="margin-bottom:.6rem">Objectifs</div>
+  <div class="objectives-list">
+    ${q.objectives.map(o=>{
+      const done=o.current>=o.target;
+      const p=Math.min(100,Math.floor(o.current/o.target*100));
+      const bc=done?'var(--moss-light)':barColor;
+      return`<div class="obj-item ${done?'done':''}">
+        <div class="obj-check">${done?'✓':''}</div>
+        <div class="obj-body">
+          <div class="obj-name">${o.name}${o.coop?' <span style="font-size:.65rem;color:var(--moss-light)">[Coop]</span>':''}</div>
+          <div class="obj-progress">${o.current} / ${o.target}</div>
+          <div class="obj-bar-bg"><div class="obj-bar-fill" style="width:${p}%;background:${bc}"></div></div>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+
+  // Progression globale
+  html+=`<div class="prog-section">
+    <div class="prog-title">Progression globale</div>
+    <div class="prog-bar-wrap">
+      <div class="prog-bar-bg"><div class="prog-bar-fill" style="width:${prog}%;background:${barColor}"></div></div>
+      <div class="prog-pct">${prog}%</div>
+    </div>
+    <div class="prog-hint">${allObjDone?'✦ Tous les objectifs accomplis — Réclamez votre récompense !':prog>0?`${q.objectives.filter(o=>o.current>=o.target).length}/${q.objectives.length} objectifs complétés`:'Quête non commencée'}</div>
+  </div>`;
+
+  // Récompenses
+  html+=`<div class="sec-t">Récompenses</div>
+  <div class="rewards-grid">
+    ${Object.entries(q.rewards).map(([r,v])=>`
+      <div class="reward-chip ${r==='glory'?'glory':r==='talentPts'?'special':''}">
+        <span>${RES_ICONS[r]||r}</span><span>+${v}</span>
+        <span style="font-size:.7rem;color:var(--parch-dim)">${r.charAt(0).toUpperCase()+r.slice(1)}</span>
+      </div>`).join('')}
+  </div>`;
+
+  // Bouton action
+  if(q.state==='locked'){
+    html+=`<button class="btn-main btn-disabled" disabled>🔒 Quête verrouillée</button>
+    <div style="font-size:.74rem;color:var(--parch-dim);font-style:italic;text-align:center">Complétez les prérequis pour débloquer cette quête.</div>`;
+  } else if(q.state==='completed'){
+    html+=`<button class="btn-main btn-disabled" disabled>✓ Quête terminée</button>`;
+  } else if(allObjDone && q.state==='active'){
+    html+=`<button class="btn-main btn-claim" onclick="claimReward('${q.id}')">✦ Réclamer la Récompense</button>`;
+  } else if(q.state==='available'){
+    html+=`<button class="btn-main btn-start" onclick="startQuest('${q.id}')">⚔ Commencer la Quête</button>`;
+  } else {
+    html+=`<button class="btn-main btn-disabled" disabled style="cursor:default">⏳ En cours…</button>
+    <div style="font-size:.72rem;color:var(--parch-dim);font-style:italic;text-align:center;margin-top:.2rem">Accompagnez les objectifs ci-dessus pour progresser.</div>`;
+  }
+
+  document.getElementById('quest-detail').innerHTML=html;
+}
+
+function advanceDialogue(qid){
+  const q=QUESTS.find(x=>x.id===qid);
+  const qs=questStates[qid];
+  if(!q||!q.dialogue)return;
+  if(qs.dialogueLine<q.dialogue.lines.length-1){qs.dialogueLine++;}
+  renderQuestDetail(q);
+}
+
+function makeChoice(qid,idx){
+  const q=QUESTS.find(x=>x.id===qid);
+  const qs=questStates[qid];
+  if(!q||qs.choiceMade!==null)return;
+  qs.choiceMade=idx;
+  const responses=[
+    `${q.dialogue.god} hoche la tête, satisfait de votre réponse.`,
+    `${q.dialogue.god} sourit — ou du moins, c'est ce que vous croyez voir.`,
+    `${q.dialogue.god} disparaît dans une lueur dorée, laissant derrière lui un silence pesant.`,
+  ];
+  toast(`${q.dialogue.avatar} ${responses[idx%3]}`,'divine');
+  renderQuestDetail(q);
+}
+
+function startQuest(qid){
+  const q=QUESTS.find(x=>x.id===qid);
+  if(!q)return;
+  q.state='active';
+  if(q.dialogue)questStates[qid].dialogueLine=0;
+  toast(`📜 Quête lancée : "${q.name}" !`,'s');
+  renderQuestList();renderQuestDetail(q);
+}
+
+function claimReward(qid){
+  const q=QUESTS.find(x=>x.id===qid);
+  if(!q||q.state==='completed')return;
+  q.state='completed';
+  Object.entries(q.rewards).forEach(([r,v])=>{
+    if(r==='glory')state.glory+=v;
+    else if(r==='talentPts')state.talentPoints=(state.talentPoints||0)+v;
+    else state.resources[r]=(state.resources[r]||0)+v;
+  });
+  updateRes();
+  toast(`🏆 Quête "${q.name}" accomplie ! Récompenses récupérées.`,'s');
+  if(q.type==='divine')setTimeout(()=>toast(`${q.dialogue?.avatar||'✦'} Les dieux notent votre nom dans les annales du Valhalla.`,'divine'),800);
+  renderQuestList();
+  currentQuestId=null;
+  document.getElementById('quest-detail').innerHTML=`
+    <div class="empty-state">
+      <div style="font-size:3rem">🏆</div>
+      <div style="font-family:'Uncial Antiqua',serif;font-size:1.1rem;color:var(--gold-light)">"${q.name}"</div>
+      <div style="font-size:.82rem;color:var(--moss-light)">✦ Quête accomplie !</div>
+      <div style="font-size:.78rem;color:var(--parch-dim);font-style:italic;text-align:center;max-width:280px;margin-top:.3rem">Votre geste sera chanté dans les salles du Valhalla.</div>
+      <button class="btn-main btn-start" style="width:200px;margin-top:1rem" onclick="currentQuestId=null;document.getElementById('quest-detail').innerHTML='<div class=empty-state><div class=empty-icon>📜</div></div>'">↩ Retour</button>
+    </div>`;
+}
+
+// ═══════════════════════════════════════
+//  UI / BOUCLE
+// ═══════════════════════════════════════
+function updateRes(){
+  ['wood','stone','food','gold','runes'].forEach(k=>{
+    const el=document.getElementById('r-'+k);if(el)el.textContent=Math.floor(state.resources[k]||0);
+  });
+  const gl=document.getElementById('r-glory');if(gl)gl.textContent=state.glory;
+}
+function toast(msg,type){
+  const c=document.getElementById('toasts');const el=document.createElement('div');
+  el.className='toast'+(type?' '+type:'');el.textContent=msg;c.appendChild(el);setTimeout(()=>el.remove(),4400);
+}
+
+setInterval(()=>{
+  state.tick++;
+  if(state.tick%10===0){
+    state.resources.food+=10;state.resources.wood+=8;state.resources.stone+=5;state.resources.gold+=2;
+    updateRes();
+    // Progression auto des objectifs actifs
+    QUESTS.filter(q=>q.state==='active').forEach(q=>{
+      q.objectives.forEach(o=>{
+        if(o.type==='resource'&&o.current<o.target){
+          if(o.name.includes('Nourriture'))o.current=Math.min(o.target,state.resources.food);
+          if(o.name.includes('Bois'))o.current=Math.min(o.target,state.resources.wood);
+          if(o.name.includes('Pierre'))o.current=Math.min(o.target,state.resources.stone);
+          if(o.name.includes('Or'))o.current=Math.min(o.target,state.resources.gold);
+          if(o.name.includes('Rune'))o.current=Math.min(o.target,state.resources.runes);
+          if(o.name.includes('Hydromel'))o.current=Math.min(o.target,state.resources.mead);
+        }
+        if(o.type==='glory')o.current=state.glory;
+        if(o.type==='moral')o.current=75;
+      });
+    });
+    if(currentQuestId){const q=QUESTS.find(x=>x.id===currentQuestId);if(q)renderQuestDetail(q);}
+  }
+},1000);
+
+init();
+</script></body></html>
