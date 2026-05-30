@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YGGDRASIL — Village</title>
+<link href="https://fonts.googleapis.com/css2?family=Uncial+Antiqua&family=IM+Fell+English:ital@0;1&family=MedievalSharp&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:         #100c05;
+  --parch:       #d4b896;
+  --parch-dim:   #8a7055;
+  --parch-light: #f0dfc0;
+  --gold:        #c8960c;
+  --gold-light:  #f0c040;
+  --gold-glow:   rgba(200,150,12,0.5);
+  --blood:       #8b1a1a;
+  --blood-bright:#e74c3c;
+  --frost:       #4a9abb;
+  --moss:        #4a7a35;
+  --moss-light:  #6aaa50;
+  --purple:      #7a3a9a;
+  --orange:      #c05a10;
+  --border:      rgba(200,150,12,0.25);
+  --panel:       rgba(16,12,5,0.92);
+  --panel-light: rgba(30,20,8,0.85);
+
+  /* Zones */
+  --z-mil:  rgba(139,26,26,0.12);
+  --z-prod: rgba(74,122,53,0.12);
+  --z-sac:  rgba(122,58,154,0.12);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
+
+html, body {
+  height: 100%;
+  font-family: 'IM Fell English', Georgia, serif;
+  background: var(--ink);
+  color: var(--parch);
+  overflow: hidden;
+}
+
+/* ══════════════════════════════
+   FOND ANIMÉ
+══════════════════════════════ */
+#bg {
+  position: fixed; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse at 20% 80%, rgba(74,122,53,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(139,26,26,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(200,150,12,0.04) 0%, transparent 70%),
+    #100c05;
+}
+
+.bg-rune {
+  position: absolute;
+  font-size: 8rem;
+  opacity: 0.015;
+  color: var(--gold);
+  animation: runeFloat 20s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes runeFloat {
+  0%,100% { transform: translateY(0) rotate(0deg); }
+  50%      { transform: translateY(-20px) rotate(5deg); }
+}
+
+/* ══════════════════════════════
+   TOPBAR
+══════════════════════════════ */
+#topbar {
+  position: relative; z-index: 100;
+  background: rgba(10,6,2,0.97);
+  border-bottom: 1px solid var(--border);
+  padding: 0.45rem 1rem;
+  display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.7);
+}
+
+.logo {
+  font-family: 'Uncial Antiqua', serif;
+  font-size: 1.2rem;
+  color: var(--gold);
+  letter-spacing: 3px;
+  text-shadow: 0 0 15px var(--gold-glow);
+  flex-shrink: 0;
+  text-decoration: none;
+}
+.logo span { font-size: 0.55rem; display: block; color: var(--parch-dim); letter-spacing: 3px; }
+
+.sep { width:1px; height:28px; background: var(--border); flex-shrink:0; }
+
+.res-row { display:flex; gap:0.4rem; flex-wrap:wrap; }
+
+.res { display:flex; align-items:center; gap:0.25rem;
+  background: rgba(200,150,12,0.06); border:1px solid var(--border);
+  border-radius:3px; padding:0.2rem 0.5rem; font-size:0.8rem; }
+.res .v { color:var(--parch-light); font-weight:600; min-width:25px; }
+.res .r { color:var(--moss-light); font-size:0.68rem; }
+.res.rare { border-color: rgba(200,150,12,0.4); }
+.res.rare .v { color:var(--gold-light); }
+
+.village-stage-badge {
+  margin-left: auto;
+  display: flex; align-items: center; gap: 0.6rem;
+  background: rgba(200,150,12,0.08); border:1px solid var(--border);
+  border-radius: 3px; padding: 0.25rem 0.8rem;
+}
+.stage-label { font-size:0.7rem; color:var(--parch-dim); letter-spacing:1px; text-transform:uppercase; }
+.stage-dots { display:flex; gap:3px; }
+.stage-dot { width:10px; height:10px; border-radius:50%; border:1px solid var(--parch-dim); transition: all 0.4s; }
+.stage-dot.active { background:var(--gold); border-color:var(--gold); box-shadow:0 0 6px var(--gold-glow); }
+
+.player-pill {
+  display:flex; align-items:center; gap:0.4rem;
+  background: rgba(200,150,12,0.06); border:1px solid var(--border);
+  border-radius:20px; padding:0.2rem 0.7rem; font-size:0.8rem; flex-shrink:0;
+}
+.role-pip { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+/* ══════════════════════════════
+   LAYOUT PRINCIPAL
+══════════════════════════════ */
+#main {
+  position: relative; z-index: 10;
+  display: flex; height: calc(100vh - 48px);
+  overflow: hidden;
+}
+
+/* ══════════════════════════════
+   VUE VILLAGE (centre)
+══════════════════════════════ */
+#village-view {
+  flex: 1; position: relative; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Cercles de zones */
+.zone-ring {
+  position: absolute; border-radius: 50%;
+  border: 1px dashed rgba(200,150,12,0.15);
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none;
+}
+
+#zone-prod { width:520px; height:520px; background: var(--z-prod); }
+#zone-mil  { width:340px; height:340px; background: var(--z-mil);  }
+#zone-sac  { width:180px; height:180px; background: var(--z-sac);  }
+
+.zone-label {
+  position: absolute;
+  font-size: 0.6rem; letter-spacing: 2px; text-transform: uppercase;
+  pointer-events: none;
+  opacity: 0.5;
+}
+#zone-prod .zone-label { bottom: 12px; color: var(--moss-light); }
+#zone-mil  .zone-label { bottom: 6px;  color: var(--blood-bright); }
+#zone-sac  .zone-label { bottom: 4px;  color: #c070e0; }
+
+/* Bâtiments sur la vue */
+.bld-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  z-index: 20;
+  transition: transform 0.2s;
+}
+
+.bld-marker:hover { transform: translate(-50%, -50%) scale(1.15); z-index: 30; }
+
+.bld-bubble {
+  width: 54px; height: 54px;
+  border-radius: 50%;
+  border: 2px solid rgba(200,150,12,0.4);
+  background: rgba(10,6,2,0.9);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.6);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  position: relative;
+}
+
+.bld-marker:hover .bld-bubble {
+  border-color: var(--gold);
+  box-shadow: 0 0 16px var(--gold-glow), 0 4px 12px rgba(0,0,0,0.6);
+}
+
+.bld-marker.locked .bld-bubble {
+  opacity: 0.4;
+  border-color: rgba(200,150,12,0.15);
+}
+
+.bld-marker.upgrading .bld-bubble {
+  border-color: var(--frost);
+  box-shadow: 0 0 12px rgba(74,154,187,0.4);
+  animation: upgradePulse 1.5s ease-in-out infinite;
+}
+
+@keyframes upgradePulse {
+  0%,100% { box-shadow: 0 0 8px rgba(74,154,187,0.3); }
+  50%      { box-shadow: 0 0 20px rgba(74,154,187,0.7); }
+}
+
+.bld-icon-big { font-size: 1.5rem; line-height: 1; }
+.bld-lvl-badge {
+  position: absolute; bottom: -4px; right: -4px;
+  background: var(--ink); border: 1px solid var(--gold);
+  border-radius: 50%; width: 16px; height: 16px;
+  font-size: 0.55rem; display: flex; align-items: center; justify-content: center;
+  color: var(--gold); font-family: 'Uncial Antiqua', serif;
+}
+
+.bld-name-tag {
+  position: absolute; bottom: -20px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.58rem; color: var(--parch-dim);
+  white-space: nowrap; letter-spacing: 0.5px;
+  pointer-events: none;
+}
+
+/* Village central */
+#village-center {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  left: 50%; top: 50%;
+  z-index: 25;
+}
+
+.hall-bubble {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  border: 3px solid var(--gold);
+  background: radial-gradient(ellipse, rgba(200,150,12,0.15), rgba(10,6,2,0.95));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2rem;
+  box-shadow: 0 0 25px var(--gold-glow), 0 0 50px rgba(200,150,12,0.1);
+  animation: hallGlow 3s ease-in-out infinite;
+  cursor: pointer;
+}
+
+@keyframes hallGlow {
+  0%,100% { box-shadow: 0 0 20px var(--gold-glow), 0 0 40px rgba(200,150,12,0.1); }
+  50%      { box-shadow: 0 0 35px var(--gold-glow), 0 0 70px rgba(200,150,12,0.2); }
+}
+
+/* ══════════════════════════════
+   SIDEBAR DROITE — DÉTAIL
+══════════════════════════════ */
+#sidebar {
+  width: 320px; flex-shrink: 0;
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-header {
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(200,150,12,0.05);
+  display: flex; align-items: center; gap: 0.6rem;
+}
+
+.sidebar-icon { font-size: 1.8rem; flex-shrink:0; }
+
+.sidebar-title {
+  font-family: 'Uncial Antiqua', serif;
+  font-size: 1rem; color: var(--gold-light);
+  letter-spacing: 1px;
+}
+.sidebar-sub { font-size: 0.75rem; color: var(--parch-dim); font-style: italic; }
+
+.sidebar-body { flex:1; overflow-y: auto; padding: 0.8rem 1rem; }
+.sidebar-body::-webkit-scrollbar { width: 4px; }
+.sidebar-body::-webkit-scrollbar-track { background: transparent; }
+.sidebar-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Sections */
+.sec { margin-bottom: 1.2rem; }
+.sec-title {
+  font-size: 0.62rem; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--parch-dim); margin-bottom: 0.6rem;
+  padding-bottom: 0.3rem; border-bottom: 1px solid rgba(200,150,12,0.1);
+  display: flex; align-items: center; gap: 0.4rem;
+}
+
+/* Bonus/effets */
+.effect-list { display:flex; flex-direction:column; gap:0.3rem; }
+.effect-row {
+  display:flex; align-items:center; gap:0.5rem;
+  background: rgba(200,150,12,0.04); border:1px solid rgba(200,150,12,0.1);
+  border-radius:3px; padding:0.3rem 0.6rem; font-size:0.82rem;
+}
+.effect-row .eff-icon { font-size:0.9rem; flex-shrink:0; }
+.effect-row .eff-text { flex:1; }
+.effect-row .eff-val  { color:var(--gold-light); font-weight:600; font-size:0.8rem; }
+
+/* Coût */
+.cost-grid { display:flex; gap:0.4rem; flex-wrap:wrap; margin-bottom:0.6rem; }
+.cost-chip {
+  display:flex; align-items:center; gap:0.25rem;
+  padding:0.2rem 0.5rem; border-radius:3px;
+  font-size:0.8rem; border:1px solid rgba(200,150,12,0.2);
+  background: rgba(200,150,12,0.05);
+}
+.cost-chip.ok  { color: var(--parch); }
+.cost-chip.nok { color: var(--blood-bright); border-color: rgba(231,76,60,0.3); }
+
+/* Barre de progression upgrade */
+.upgrade-progress {
+  background: rgba(0,0,0,0.4); border-radius:3px; height:6px;
+  overflow:hidden; margin-bottom:0.5rem;
+}
+.upgrade-bar {
+  height:100%; border-radius:3px;
+  background: linear-gradient(90deg, var(--frost), #7ec8e3);
+  transition: width 1s linear;
+  box-shadow: 0 0 6px rgba(74,154,187,0.5);
+}
+
+/* Boutons */
+.btn-upgrade {
+  width:100%; padding:0.55rem;
+  font-family: 'Uncial Antiqua', serif;
+  font-size:0.82rem; letter-spacing:1.5px;
+  background: rgba(200,150,12,0.1);
+  border:1px solid rgba(200,150,12,0.5);
+  color:var(--gold); cursor:pointer;
+  border-radius:3px; transition:all 0.2s;
+  display:flex; align-items:center; justify-content:center; gap:0.5rem;
+}
+.btn-upgrade:hover:not(:disabled) {
+  background: rgba(200,150,12,0.22);
+  box-shadow: 0 0 12px var(--gold-glow);
+}
+.btn-upgrade:disabled {
+  opacity:0.35; cursor:not-allowed;
+  border-color: rgba(200,150,12,0.15); color:var(--parch-dim);
+}
+
+.btn-cancel {
+  width:100%; padding:0.45rem;
+  font-size:0.75rem; background:transparent;
+  border:1px solid rgba(231,76,60,0.3);
+  color:var(--blood-bright); cursor:pointer;
+  border-radius:3px; margin-top:0.4rem; transition:all 0.2s;
+}
+.btn-cancel:hover { background:rgba(231,76,60,0.1); }
+
+/* Arbre de déblocage */
+.tree-node {
+  display:flex; align-items:center; gap:0.6rem;
+  padding:0.4rem 0.6rem; border-radius:3px;
+  border:1px solid rgba(200,150,12,0.1);
+  background: rgba(200,150,12,0.03);
+  margin-bottom:0.3rem; cursor:pointer;
+  transition: all 0.2s; position:relative;
+}
+.tree-node:hover { border-color:var(--gold); background:rgba(200,150,12,0.08); }
+.tree-node.unlocked { border-color:rgba(106,170,80,0.4); background:rgba(74,122,53,0.08); }
+.tree-node.current  { border-color:var(--gold); background:rgba(200,150,12,0.1); }
+.tree-node.locked   { opacity:0.4; cursor:default; }
+
+.tree-icon  { font-size:1.1rem; flex-shrink:0; }
+.tree-name  { flex:1; font-size:0.82rem; }
+.tree-state {
+  font-size:0.65rem; padding:1px 5px; border-radius:10px;
+  font-family:'Uncial Antiqua',serif;
+}
+.tree-state.done { background:rgba(74,122,53,0.3); color:var(--moss-light); }
+.tree-state.next { background:rgba(200,150,12,0.2); color:var(--gold); }
+.tree-state.lock { background:rgba(0,0,0,0.3); color:var(--parch-dim); }
+
+.tree-connector {
+  width:2px; height:12px; background:rgba(200,150,12,0.2);
+  margin-left: 18px; margin-bottom:0;
+}
+
+/* Barre gloire */
+.glory-wrap { margin-bottom:1rem; }
+.glory-top { display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:0.3rem; }
+.glory-val  { color:var(--gold-light); font-weight:600; }
+.glory-max  { color:var(--parch-dim); }
+.glory-bar-bg { background:rgba(0,0,0,0.4); border-radius:3px; height:8px; overflow:hidden; }
+.glory-bar-fill {
+  height:100%; border-radius:3px;
+  background: linear-gradient(90deg, #8b6914, var(--gold), var(--gold-light));
+  box-shadow: 0 0 8px var(--gold-glow);
+  transition:width 1s ease;
+}
+
+/* Zones legend sidebar */
+.zone-legend { display:flex; flex-direction:column; gap:0.35rem; }
+.zone-leg-row {
+  display:flex; align-items:center; gap:0.5rem;
+  font-size:0.82rem; padding:0.3rem 0.5rem;
+  border-radius:3px; cursor:pointer; transition:all 0.2s;
+  border:1px solid transparent;
+}
+.zone-leg-row:hover { border-color:var(--border); background:rgba(200,150,12,0.05); }
+.zone-leg-row.active { border-color:var(--gold); background:rgba(200,150,12,0.1); }
+.zone-dot { width:10px; height:10px; border-radius:2px; flex-shrink:0; }
+
+/* ══════════════════════════════
+   PANNEAU GAUCHE — LISTE BÂTIMENTS
+══════════════════════════════ */
+#bld-list-panel {
+  width: 200px; flex-shrink:0;
+  background: var(--panel);
+  border-right:1px solid var(--border);
+  display:flex; flex-direction:column;
+  overflow:hidden;
+}
+
+.blp-header {
+  padding:0.7rem 0.8rem;
+  border-bottom:1px solid var(--border);
+  font-family:'Uncial Antiqua',serif;
+  font-size:0.85rem; color:var(--gold);
+  letter-spacing:1px;
+}
+
+.blp-zone-tab {
+  display:flex; border-bottom:1px solid var(--border);
+}
+.blp-tab {
+  flex:1; padding:0.4rem 0.3rem;
+  font-size:0.62rem; letter-spacing:1px; text-transform:uppercase;
+  color:var(--parch-dim); cursor:pointer; text-align:center;
+  border-bottom:2px solid transparent; transition:all 0.2s;
+}
+.blp-tab:hover { color:var(--parch); }
+.blp-tab.active { color:var(--gold); border-bottom-color:var(--gold); }
+
+.blp-list { flex:1; overflow-y:auto; padding:0.5rem; }
+.blp-list::-webkit-scrollbar { width:3px; }
+.blp-list::-webkit-scrollbar-thumb { background:var(--border); }
+
+.blp-item {
+  display:flex; align-items:center; gap:0.5rem;
+  padding:0.45rem 0.5rem; border-radius:3px;
+  cursor:pointer; transition:all 0.15s;
+  border:1px solid transparent; margin-bottom:0.25rem;
+  position:relative;
+}
+.blp-item:hover { background:rgba(200,150,12,0.06); border-color:var(--border); }
+.blp-item.active { background:rgba(200,150,12,0.1); border-color:rgba(200,150,12,0.4); }
+.blp-item.locked { opacity:0.4; }
+.blp-item.upgrading { border-color:rgba(74,154,187,0.4); }
+
+.blp-icon { font-size:1.1rem; flex-shrink:0; }
+.blp-name { flex:1; font-size:0.78rem; line-height:1.2; }
+.blp-lvl  {
+  font-size:0.62rem; background:rgba(200,150,12,0.1);
+  border:1px solid rgba(200,150,12,0.25); border-radius:8px;
+  padding:1px 5px; color:var(--gold); flex-shrink:0;
+}
+.blp-item.locked .blp-lvl { background:rgba(0,0,0,0.3); color:var(--parch-dim); border-color:rgba(200,150,12,0.1); }
+
+.blp-upgrade-dot {
+  position:absolute; top:3px; right:3px;
+  width:6px; height:6px; border-radius:50%;
+  background:var(--frost); animation:upgradePulse 1s ease-in-out infinite;
+}
+
+/* ══════════════════════════════
+   TOAST
+══════════════════════════════ */
+#toasts {
+  position:fixed; bottom:1.5rem; right:1.5rem;
+  z-index:9999; display:flex; flex-direction:column; gap:0.4rem;
+  pointer-events:none;
+}
+.toast {
+  background:rgba(10,6,2,0.97); border:1px solid var(--gold);
+  border-radius:3px; padding:0.5rem 1rem;
+  font-size:0.85rem; color:var(--parch-light);
+  box-shadow:0 4px 20px rgba(0,0,0,0.7);
+  animation:toastIn 0.3s cubic-bezier(0.34,1.56,0.64,1), toastOut 0.3s ease 3.5s forwards;
+  display:flex; align-items:center; gap:0.5rem; max-width:280px;
+}
+.toast.success { border-color:var(--moss-light); }
+.toast.danger  { border-color:var(--blood-bright); }
+@keyframes toastIn  { from { opacity:0; transform:translateX(30px); } }
+@keyframes toastOut { to   { opacity:0; transform:translateX(30px); } }
+
+/* ══════════════════════════════
+   MODAL CONFIRMATION
+══════════════════════════════ */
+#modal-overlay {
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,0.75); z-index:1000;
+  align-items:center; justify-content:center;
+}
+#modal-overlay.open { display:flex; }
+.modal {
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:5px; padding:1.5rem 2rem; max-width:380px; width:90%;
+  box-shadow:0 8px 40px rgba(0,0,0,0.8);
+}
+.modal h3 { font-family:'Uncial Antiqua',serif; color:var(--gold); margin-bottom:0.6rem; font-size:1.1rem; }
+.modal p  { color:var(--parch-dim); margin-bottom:1.2rem; font-size:0.9rem; line-height:1.5; }
+.modal-btns { display:flex; gap:0.6rem; }
+.modal-btns button { flex:1; }
+
+/* ══════════════════════════════
+   RESPONSIVE
+══════════════════════════════ */
+@media (max-width:768px) {
+  #bld-list-panel { display:none; }
+  #sidebar        { width:260px; }
+  .bld-bubble     { width:44px; height:44px; }
+  .bld-icon-big   { font-size:1.2rem; }
+}
+</style>
+</head>
+<body>
+
+<div id="bg">
+  <div class="bg-rune" style="top:10%;left:5%">ᚠ</div>
+  <div class="bg-rune" style="top:60%;left:85%;animation-delay:-7s">ᚢ</div>
+  <div class="bg-rune" style="top:30%;left:50%;animation-delay:-14s">ᚦ</div>
+</div>
+
+<!-- ══════ TOPBAR ══════ -->
+<div id="topbar">
+  <a class="logo" href="yggdrasil-carte.html">YGGDRASIL<span>⁂ village ⁂</span></a>
+  <div class="sep"></div>
+  <div class="res-row">
+    <div class="res"><span>🪵</span><span class="v" id="r-wood">480</span><span class="r">+6/t</span></div>
+    <div class="res"><span>🪨</span><span class="v" id="r-stone">320</span><span class="r">+4/t</span></div>
+    <div class="res"><span>🌾</span><span class="v" id="r-food">610</span><span class="r">+8/t</span></div>
+    <div class="res"><span>🪙</span><span class="v" id="r-gold">145</span><span class="r">+2/t</span></div>
+  </div>
+  <div class="sep"></div>
+  <div class="res-row">
+    <div class="res rare"><span>ᚱ</span><span class="v" id="r-runes">12</span></div>
+    <div class="res rare"><span>☠</span><span class="v" id="r-souls">3</span></div>
+    <div class="res rare"><span>🍺</span><span class="v" id="r-mead">28</span></div>
+  </div>
+
+  <div class="village-stage-badge" id="stage-badge">
+    <span class="stage-label">Stade</span>
+    <div class="stage-dots" id="stage-dots"></div>
+  </div>
+
+  <div class="player-pill">
+    <div class="role-pip" id="role-pip" style="background:#c0392b;box-shadow:0 0 6px #c0392b"></div>
+    <span id="player-name">Ragnar</span>
+    <span style="color:var(--parch-dim);font-size:0.7rem">· <span id="player-role">Jarl</span></span>
+  </div>
+</div>
+
+<!-- ══════ MAIN ══════ -->
+<div id="main">
+
+  <!-- PANNEAU GAUCHE -->
+  <div id="bld-list-panel">
+    <div class="blp-header">⚒ Bâtiments</div>
+    <div class="blp-zone-tab">
+      <div class="blp-tab active" data-zone="all"  onclick="filterZone('all')">Tous</div>
+      <div class="blp-tab" data-zone="mil"  onclick="filterZone('mil')">⚔</div>
+      <div class="blp-tab" data-zone="prod" onclick="filterZone('prod')">🌿</div>
+      <div class="blp-tab" data-zone="sac"  onclick="filterZone('sac')">✦</div>
+    </div>
+    <div class="blp-list" id="blp-list"></div>
+  </div>
+
+  <!-- VUE VILLAGE -->
+  <div id="village-view">
+    <!-- Zones -->
+    <div class="zone-ring" id="zone-prod" style="position:absolute">
+      <div class="zone-label">Zone de Production</div>
+    </div>
+    <div class="zone-ring" id="zone-mil" style="position:absolute">
+      <div class="zone-label">Zone Militaire</div>
+    </div>
+    <div class="zone-ring" id="zone-sac" style="position:absolute">
+      <div class="zone-label">Zone Sacrée</div>
+    </div>
+
+    <!-- Village central -->
+    <div id="village-center">
+      <div class="hall-bubble" onclick="selectBuilding('hall')" title="Grande Halle">🏰</div>
+    </div>
+
+    <!-- Bâtiments (positionnés via JS) -->
+    <div id="bld-markers"></div>
+  </div>
+
+  <!-- SIDEBAR DROITE -->
+  <div id="sidebar">
+    <div class="sidebar-header" id="sb-header">
+      <div class="sidebar-icon" id="sb-icon">🏘</div>
+      <div>
+        <div class="sidebar-title" id="sb-title">Village de Ragnar</div>
+        <div class="sidebar-sub"  id="sb-sub">Sélectionnez un bâtiment</div>
+      </div>
+    </div>
+    <div class="sidebar-body" id="sb-body">
+      <!-- Contenu dynamique -->
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL -->
+<div id="modal-overlay">
+  <div class="modal">
+    <h3 id="modal-title">Confirmation</h3>
+    <p id="modal-text"></p>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+      <button class="btn-upgrade" id="modal-confirm">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOASTS -->
+<div id="toasts"></div>
+
+<script>
+// ══════════════════════════════════════════
+//  DONNÉES
+// ══════════════════════════════════════════
+
+const ROLES = {
+  jarl:  { name:'Jarl',     color:'#c0392b', pip:'#c0392b', icon:'🗡' },
+  chaman:{ name:'Chaman',   color:'#8e44ad', pip:'#8e44ad', icon:'🔮' },
+  skald: { name:'Skald',    color:'#2980b9', pip:'#2980b9', icon:'🎵' },
+  forge: { name:'Forgeron', color:'#d35400', pip:'#d35400', icon:'🔨' },
+};
+
+// Définition des bâtiments
+// zone: mil/prod/sac | pos: [x%,y%] depuis centre vue
+const BUILDINGS = [
+  // ══ COMMUNS ══
+  { id:'hall',    name:'Grande Halle',    icon:'🏰', zone:'sac',  pos:[0,0],      maxLvl:5, base:{ wood:0,stone:0,food:0,gold:0 },
+    desc:'Le cœur du village. Débloque de nouveaux bâtiments à chaque niveau.',
+    bonuses:['Débloque de nouveaux bâtiments','Augmente la capacité de stockage','Améliore la défense globale'],
+    tree:['farm','sawmill','mine','barracks','wall'],
+    exclusive:null },
+
+  { id:'farm',    name:'Ferme',           icon:'🌾', zone:'prod', pos:[-28,-15],  maxLvl:5, base:{ wood:60,stone:30,food:0,gold:0 },
+    desc:'Produit la nourriture nécessaire à vos troupes et villageois.',
+    bonuses:['Production nourriture +8/tick par niveau','Augmente la population max','Réduit la famine en hiver'],
+    tree:['granary'],
+    exclusive:null },
+
+  { id:'sawmill', name:'Scierie',         icon:'🪵', zone:'prod', pos:[22,-20],   maxLvl:5, base:{ wood:40,stone:50,food:0,gold:0 },
+    desc:'Abat les arbres des forêts voisines pour fournir le bois de construction.',
+    bonuses:['Production bois +6/tick par niveau','Réduit le coût en bois des constructions','Débloque la menuiserie avancée'],
+    tree:['market'],
+    exclusive:null },
+
+  { id:'mine',    name:'Mine',            icon:'⛏',  zone:'prod', pos:[30,10],    maxLvl:5, base:{ wood:80,stone:20,food:0,gold:0 },
+    desc:'Creuse les entrailles de la terre pour en extraire pierre et minerai.',
+    bonuses:['Production pierre +4/tick par niveau','Chance de trouver des gemmes','Débloque la forge'],
+    tree:['forge'],
+    exclusive:null },
+
+  { id:'barracks',name:'Caserne',         icon:'🏟', zone:'mil',  pos:[-22,10],   maxLvl:5, base:{ wood:120,stone:80,food:0,gold:20 },
+    desc:'Entraîne les guerriers vikings qui défendront et raideront pour le clan.',
+    bonuses:['Débloque de nouvelles unités','Vitesse entraînement +15%/niveau','Augmente la limite de troupes'],
+    tree:['stables','archeryrange'],
+    exclusive:null },
+
+  { id:'wall',    name:'Remparts',        icon:'🧱', zone:'mil',  pos:[0,25],     maxLvl:5, base:{ wood:100,stone:150,food:0,gold:0 },
+    desc:'Fortifications qui protègent le village des assauts ennemis.',
+    bonuses:['Défense +25%/niveau','Réduit les pertes lors des attaques','Débloque les pièges'],
+    tree:['trap'],
+    exclusive:null },
+
+  // ══ DÉBLOQUÉS ══
+  { id:'granary', name:'Grenier',         icon:'🏚', zone:'prod', pos:[-35,5],    maxLvl:3, base:{ wood:80,stone:60,food:0,gold:0 },
+    desc:'Stocke de grandes quantités de nourriture pour survivre à l\'hiver.',
+    bonuses:['Stockage nourriture x2/niveau','Réduit la perte de nourriture en hiver','Permet le ravitaillement des alliés'],
+    tree:[],
+    exclusive:null, requires:'farm', requiresLvl:2 },
+
+  { id:'market',  name:'Marché',          icon:'🏪', zone:'prod', pos:[35,-5],    maxLvl:3, base:{ wood:100,stone:60,food:0,gold:40 },
+    desc:'Facilite les échanges avec votre allié et les clans voisins.',
+    bonuses:['Commerce avec allié x2/niveau','Déblocage péons supplémentaires','Réduit le temps de transport'],
+    tree:[],
+    exclusive:null, requires:'sawmill', requiresLvl:2 },
+
+  { id:'forge',   name:'Forge',           icon:'🔨', zone:'mil',  pos:[-15,22],   maxLvl:4, base:{ wood:80,stone:120,food:0,gold:60 },
+    desc:'Forge les armes et armures qui donneront l\'avantage en combat.',
+    bonuses:['Attaque troupes +15%/niveau','Armure +10%/niveau','Débloque équipements pour le Héros'],
+    tree:['smithy'],
+    exclusive:null, requires:'mine', requiresLvl:2 },
+
+  { id:'stables', name:'Écuries',         icon:'🐴', zone:'mil',  pos:[20,22],    maxLvl:3, base:{ wood:140,stone:80,food:60,gold:30 },
+    desc:'Permet d\'entraîner des cavaliers et des éclaireurs montés.',
+    bonuses:['Débloque Chevalier & Éclaireur','Vitesse armée +20%/niveau','Bonus de charge en combat'],
+    tree:[],
+    exclusive:null, requires:'barracks', requiresLvl:3 },
+
+  // ══ RÔLES EXCLUSIFS ══
+  { id:'raidshall',name:'Salle des Raids', icon:'⚔', zone:'mil',  pos:[-30,20],   maxLvl:4, base:{ wood:150,stone:100,food:0,gold:80 },
+    desc:'Planifie des raids dévastateurs sur les clans ennemis. Exclusif au Jarl.',
+    bonuses:['Butin raids +30%/niveau','Débloque Raid Éclair (action rapide)','Réputation guerrière améliorée'],
+    tree:[],
+    exclusive:'jarl', requires:'barracks', requiresLvl:2 },
+
+  { id:'altar',   name:'Autel Runique',   icon:'🗿', zone:'sac',  pos:[0,-28],    maxLvl:4, base:{ wood:80,stone:120,food:0,gold:0 },
+    desc:'Canal de communication avec les dieux nordiques. Exclusif au Chaman.',
+    bonuses:['Production Runes +2/tick','Amplifie les sorts du Chaman','Prières aux dieux disponibles'],
+    tree:['runestone'],
+    exclusive:'chaman', requires:'hall', requiresLvl:2 },
+
+  { id:'skaaldhouse',name:'Maison du Skald',icon:'🎸',zone:'sac', pos:[25,-25],   maxLvl:4, base:{ wood:100,stone:60,food:0,gold:50 },
+    desc:'Forge les sagas qui inspirent les troupes et démoralisent l\'ennemi. Exclusif au Skald.',
+    bonuses:['Moral des troupes +20%/niveau','Débloque Rumeurs & Espionnage','Buffs d\'alliance améliorés'],
+    tree:[],
+    exclusive:'skald', requires:'hall', requiresLvl:2 },
+
+  { id:'anvil',   name:'Grande Enclume',  icon:'⚒', zone:'mil',  pos:[15,-25],   maxLvl:4, base:{ wood:60,stone:160,food:0,gold:80 },
+    desc:'Chef-d\'œuvre du Forgeron, produit les meilleures armes des neuf royaumes.',
+    bonuses:['Équipement héros de qualité légendaire','Réduction coût construction -20%','Monuments d\'alliance débloqués'],
+    tree:[],
+    exclusive:'forge', requires:'mine', requiresLvl:3 },
+
+  { id:'runestone',name:'Pierre Runique', icon:'🪨', zone:'sac',  pos:[-18,-25],  maxLvl:3, base:{ wood:60,stone:200,food:0,gold:0 },
+    desc:'Monument mystique qui amplifie la magie du village et repousse les créatures.',
+    bonuses:['Résistance créatures +20%/niveau','Produit Âmes rares','Événement Nuit de Sköll atténué'],
+    tree:[],
+    exclusive:null, requires:'altar', requiresLvl:2 },
+];
+
+// État
+const state = {
+  role: 'jarl',
+  player: 'Ragnar',
+  glory: 1240,
+  gloryMax: 10000,
+  stage: 2,
+  tick: 0,
+  resources: { wood:480, stone:320, food:610, gold:145, runes:12, souls:3, mead:28 },
+  buildings: {},  // id -> { level, upgrading:{finishTick,duration} }
+  selectedBld: null,
+  filterZone: 'all',
+};
+
+// Init bâtiments
+BUILDINGS.forEach(b => {
+  const unlocked = !b.requires || isUnlocked(b);
+  state.buildings[b.id] = {
+    level: unlocked ? (b.id==='hall'?2 : b.id==='farm'||b.id==='sawmill'?2 : b.id==='barracks'||b.id==='mine'||b.id==='wall'?1 : 0) : 0,
+    upgrading: null,
+  };
+});
+
+// Correction : certains débloqués selon prérequis
+function isUnlocked(bDef) {
+  if(!bDef.requires) return true;
+  if(bDef.exclusive && bDef.exclusive !== state.role) return false;
+  const reqBld = state.buildings[bDef.requires];
+  return reqBld && reqBld.level >= (bDef.requiresLvl||1);
+}
+
+function getBldState(id) { return state.buildings[id] || { level:0, upgrading:null }; }
+
+function getUpgradeCost(bDef, lvl) {
+  const m = Math.pow(1.55, lvl);
+  return {
+    wood:  Math.floor(bDef.base.wood  * m),
+    stone: Math.floor(bDef.base.stone * m),
+    food:  Math.floor(bDef.base.food  * m),
+    gold:  Math.floor(bDef.base.gold  * m),
+  };
+}
+
+function canAfford(cost) {
+  return Object.entries(cost).every(([r,v]) => (state.resources[r]||0) >= v);
+}
+
+function upgradeDuration(lvl) { return Math.max(5, 8 + lvl * 6); }
+
+// ══════════════════════════════════════════
+//  RENDU INITIAL
+// ══════════════════════════════════════════
+function init() {
+  // Stage dots
+  const dots = document.getElementById('stage-dots');
+  dots.innerHTML = '';
+  for(let i=1;i<=5;i++) {
+    const d = document.createElement('div');
+    d.className = 'stage-dot' + (i<=state.stage?' active':'');
+    dots.appendChild(d);
+  }
+
+  // Role
+  const roleDef = ROLES[state.role];
+  document.getElementById('player-name').textContent = state.player;
+  document.getElementById('player-role').textContent = roleDef.name;
+  const pip = document.getElementById('role-pip');
+  pip.style.background = roleDef.color;
+  pip.style.boxShadow = `0 0 6px ${roleDef.color}`;
+
+  renderBldMarkers();
+  renderBldList();
+  showVillageOverview();
+}
+
+// ══════════════════════════════════════════
+//  MARQUEURS SUR LA VUE
+// ══════════════════════════════════════════
+function renderBldMarkers() {
+  const container = document.getElementById('bld-markers');
+  container.innerHTML = '';
+
+  const view = document.getElementById('village-view');
+  const vw = view.clientWidth;
+  const vh = view.clientHeight;
+  const cx = vw/2, cy = vh/2;
+
+  BUILDINGS.forEach(bDef => {
+    if(bDef.id === 'hall') return; // géré séparément
+    const bs = getBldState(bDef.id);
+    const unlocked = isUnlocked(bDef);
+    const excl = bDef.exclusive && bDef.exclusive !== state.role;
+
+    if(excl) return; // ne pas afficher les bâtiments d'un autre rôle
+
+    const el = document.createElement('div');
+    el.className = 'bld-marker' + (!unlocked||bs.level===0?' locked':'') + (bs.upgrading?' upgrading':'');
+    el.style.left = (cx + bDef.pos[0] * vw/200) + 'px';
+    el.style.top  = (cy + bDef.pos[1] * vh/200) + 'px';
+    el.dataset.id = bDef.id;
+
+    el.innerHTML = `
+      <div class="bld-bubble">
+        <div class="bld-icon-big">${unlocked && bs.level>0 ? bDef.icon : '🔒'}</div>
+        ${bs.level>0?`<div class="bld-lvl-badge">${bs.level}</div>`:''}
+      </div>
+      <div class="bld-name-tag">${bDef.name}</div>
+    `;
+
+    el.addEventListener('click', () => selectBuilding(bDef.id));
+    container.appendChild(el);
+  });
+}
+
+// ══════════════════════════════════════════
+//  LISTE BÂTIMENTS (gauche)
+// ══════════════════════════════════════════
+function renderBldList() {
+  const list = document.getElementById('blp-list');
+  list.innerHTML = '';
+
+  BUILDINGS.forEach(bDef => {
+    const bs = getBldState(bDef.id);
+    const unlocked = isUnlocked(bDef);
+    const excl = bDef.exclusive && bDef.exclusive !== state.role;
+    if(excl) return;
+    if(state.filterZone !== 'all' && bDef.zone !== state.filterZone) return;
+
+    const el = document.createElement('div');
+    el.className = 'blp-item'
+      + (state.selectedBld===bDef.id?' active':'')
+      + (!unlocked||bs.level===0?' locked':'')
+      + (bs.upgrading?' upgrading':'');
+    el.dataset.id = bDef.id;
+
+    el.innerHTML = `
+      <div class="blp-icon">${unlocked&&bs.level>0?bDef.icon:'🔒'}</div>
+      <div class="blp-name">${bDef.name}</div>
+      <div class="blp-lvl">${bs.level>0?bs.level:'—'}</div>
+      ${bs.upgrading?'<div class="blp-upgrade-dot"></div>':''}
+    `;
+
+    el.addEventListener('click', () => selectBuilding(bDef.id));
+    list.appendChild(el);
+  });
+}
+
+function filterZone(zone) {
+  state.filterZone = zone;
+  document.querySelectorAll('.blp-tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.zone===zone));
+  renderBldList();
+}
+
+// ══════════════════════════════════════════
+//  SÉLECTION D'UN BÂTIMENT
+// ══════════════════════════════════════════
+function selectBuilding(id) {
+  state.selectedBld = id;
+  renderBldList();
+
+  if(id === 'hall') { showHallPanel(); return; }
+
+  const bDef = BUILDINGS.find(b=>b.id===id);
+  if(!bDef) return;
+  const bs = getBldState(id);
+  const unlocked = isUnlocked(bDef);
+
+  // Header
+  document.getElementById('sb-icon').textContent = unlocked&&bs.level>0 ? bDef.icon : '🔒';
+  document.getElementById('sb-title').textContent = bDef.name;
+  document.getElementById('sb-sub').textContent = unlocked&&bs.level>0
+    ? `Niveau ${bs.level} / ${bDef.maxLvl} · Zone ${bDef.zone==='mil'?'Militaire':bDef.zone==='prod'?'Production':'Sacrée'}`
+    : unlocked ? 'Non construit' : 'Bâtiment verrouillé';
+
+  if(!unlocked || bs.level===0) { showLockedPanel(bDef); return; }
+
+  showBuildingDetail(bDef, bs);
+}
+
+function showVillageOverview() {
+  document.getElementById('sb-icon').textContent  = '🏘';
+  document.getElementById('sb-title').textContent = `Village de ${state.player}`;
+  document.getElementById('sb-sub').textContent   = `Stade ${state.stage}/5 · ${ROLES[state.role].name}`;
+
+  const body = document.getElementById('sb-body');
+  const glory_pct = (state.glory/state.gloryMax*100).toFixed(1);
+
+  let zonesHtml = `
+    <div class="zone-legend">
+      <div class="zone-leg-row" onclick="filterZone('mil')"><div class="zone-dot" style="background:#8b1a1a"></div>⚔ Zone Militaire</div>
+      <div class="zone-leg-row" onclick="filterZone('prod')"><div class="zone-dot" style="background:#4a7a35"></div>🌿 Zone de Production</div>
+      <div class="zone-leg-row" onclick="filterZone('sac')"><div class="zone-dot" style="background:#7a3a9a"></div>✦ Zone Sacrée</div>
+    </div>`;
+
+  body.innerHTML = `
+    <div class="glory-wrap">
+      <div class="glory-top">
+        <span class="glory-val">⚔ ${state.glory.toLocaleString()} Gloire</span>
+        <span class="glory-max">Valhalla : ${state.gloryMax.toLocaleString()}</span>
+      </div>
+      <div class="glory-bar-bg">
+        <div class="glory-bar-fill" style="width:${glory_pct}%"></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">🏗 Zones du village</div>
+      ${zonesHtml}
+    </div>
+    <div class="sec">
+      <div class="sec-title">📊 Résumé</div>
+      <div class="effect-list">
+        <div class="effect-row"><span class="eff-icon">👥</span><span class="eff-text">Population</span><span class="eff-val">248</span></div>
+        <div class="effect-row"><span class="eff-icon">⚔</span><span class="eff-text">Troupes actives</span><span class="eff-val">43</span></div>
+        <div class="effect-row"><span class="eff-icon">🛡</span><span class="eff-text">Défense totale</span><span class="eff-val">186</span></div>
+        <div class="effect-row"><span class="eff-icon">📦</span><span class="eff-text">Stockage max</span><span class="eff-val">3 200</span></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">🪓 Rôle : ${ROLES[state.role].icon} ${ROLES[state.role].name}</div>
+      <div class="effect-list">
+        ${getRoleBonusesHtml()}
+      </div>
+    </div>
+  `;
+}
+
+function getRoleBonusesHtml() {
+  const bonuses = {
+    jarl:  [['⚔','Bonus de raid','+20% butin'],['🗡','Recrutement guerriers','×1.3 vitesse'],['🏹','Salle des Raids','Débloquée']],
+    chaman:[['🔮','Sorts runiques','Disponibles'],['ᚱ','Production runes','+50%'],['🗿','Autel Runique','Débloqué']],
+    skald: [['🎵','Moral des troupes','+25%'],['📜','Rumeurs','Disponibles'],['🎸','Maison du Skald','Débloquée']],
+    forge: [['🔨','Qualité équipement','Légendaire'],['⚒','Coût construction','-20%'],['⚔','Attaque troupes','+15%']],
+  };
+  return (bonuses[state.role]||[]).map(([i,t,v])=>
+    `<div class="effect-row"><span class="eff-icon">${i}</span><span class="eff-text">${t}</span><span class="eff-val">${v}</span></div>`
+  ).join('');
+}
+
+function showHallPanel() {
+  const bs = getBldState('hall');
+  document.getElementById('sb-icon').textContent  = '🏰';
+  document.getElementById('sb-title').textContent = 'Grande Halle';
+  document.getElementById('sb-sub').textContent   = `Niveau ${bs.level}/5 · Cœur du village`;
+
+  const cost = getUpgradeCost(BUILDINGS[0], bs.level);
+  const affordable = canAfford(cost);
+  const maxed = bs.level >= 5;
+
+  document.getElementById('sb-body').innerHTML = `
+    <div class="sec">
+      <div class="sec-title">ℹ Description</div>
+      <p style="font-size:0.85rem;color:var(--parch-dim);font-style:italic;line-height:1.5">
+        Le cœur battant de votre village. Chaque amélioration débloque de nouveaux bâtiments et augmente vos capacités.
+      </p>
+    </div>
+    <div class="sec">
+      <div class="sec-title">✦ Bonus actuels (Niv. ${bs.level})</div>
+      <div class="effect-list">
+        <div class="effect-row"><span class="eff-icon">📦</span><span class="eff-text">Stockage</span><span class="eff-val">${bs.level*800+1600}</span></div>
+        <div class="effect-row"><span class="eff-icon">🛡</span><span class="eff-text">Défense base</span><span class="eff-val">+${bs.level*10}%</span></div>
+        <div class="effect-row"><span class="eff-icon">🏗</span><span class="eff-text">Bâtiments débloqués</span><span class="eff-val">${bs.level*3}</span></div>
+      </div>
+    </div>
+    ${!maxed ? `
+    <div class="sec">
+      <div class="sec-title">💰 Coût amélioration → Niv. ${bs.level+1}</div>
+      ${renderCostHtml(cost)}
+    </div>
+    <button class="btn-upgrade" onclick="upgradeBuilding('hall')" ${!affordable||bs.upgrading?'disabled':''}>
+      ${bs.upgrading?`🔨 En cours…`:`⬆ Améliorer → Niv. ${bs.level+1}`}
+    </button>` : `<div style="text-align:center;color:var(--gold);font-family:'Uncial Antiqua',serif;padding:1rem">✦ Niveau Maximum ✦</div>`}
+  `;
+}
+
+function showLockedPanel(bDef) {
+  const reqBld = BUILDINGS.find(b=>b.id===bDef.requires);
+  document.getElementById('sb-body').innerHTML = `
+    <div class="sec">
+      <div class="sec-title">🔒 Bâtiment Verrouillé</div>
+      <p style="font-size:0.85rem;color:var(--parch-dim);font-style:italic;line-height:1.5;margin-bottom:0.8rem">
+        ${bDef.desc}
+      </p>
+      ${bDef.exclusive?`<div class="effect-row" style="margin-bottom:0.5rem"><span class="eff-icon">${ROLES[bDef.exclusive]?.icon}</span><span class="eff-text">Exclusif au rôle</span><span class="eff-val">${ROLES[bDef.exclusive]?.name}</span></div>`:''}
+      ${bDef.requires?`
+        <div class="effect-row">
+          <span class="eff-icon">🔑</span>
+          <span class="eff-text">Requiert ${reqBld?.name}</span>
+          <span class="eff-val">Niv. ${bDef.requiresLvl||1}</span>
+        </div>` : ''}
+    </div>
+    <div class="sec">
+      <div class="sec-title">✦ Bonus une fois construit</div>
+      <div class="effect-list">
+        ${bDef.bonuses.map(b=>`<div class="effect-row"><span class="eff-icon">✦</span><span class="eff-text">${b}</span></div>`).join('')}
+      </div>
+    </div>
+    ${isUnlocked(bDef)?`
+      <div class="sec">
+        <div class="sec-title">💰 Coût de construction</div>
+        ${renderCostHtml(getUpgradeCost(bDef,0))}
+      </div>
+      <button class="btn-upgrade" onclick="buildNew('${bDef.id}')" ${!canAfford(getUpgradeCost(bDef,0))?'disabled':''}>
+        🏗 Construire
+      </button>
+    `:''}
+  `;
+}
+
+function showBuildingDetail(bDef, bs) {
+  const cost = getUpgradeCost(bDef, bs.level);
+  const affordable = canAfford(cost);
+  const maxed = bs.level >= bDef.maxLvl;
+
+  // Arbre de déblocage
+  let treeHtml = '';
+  if(bDef.tree && bDef.tree.length > 0) {
+    treeHtml = `<div class="sec"><div class="sec-title">🌳 Débloque</div>`;
+    bDef.tree.forEach(tid => {
+      const tb = BUILDINGS.find(b=>b.id===tid);
+      if(!tb) return;
+      const tbs = getBldState(tid);
+      const tunlocked = isUnlocked(tb);
+      const state_label = tbs.level>0?'done':tunlocked?'next':'lock';
+      const state_text  = tbs.level>0?'Construit':tunlocked?'Disponible':'Verrouillé';
+      treeHtml += `
+        <div class="tree-connector"></div>
+        <div class="tree-node ${tbs.level>0?'unlocked':tunlocked?'current':'locked'}" onclick="selectBuilding('${tid}')">
+          <span class="tree-icon">${tb.icon}</span>
+          <span class="tree-name">${tb.name}</span>
+          <span class="tree-state ${state_label}">${state_text}</span>
+        </div>`;
+    });
+    treeHtml += `</div>`;
+  }
+
+  // Temps d'upgrade
+  const duration = upgradeDuration(bs.level);
+
+  document.getElementById('sb-body').innerHTML = `
+    <div class="sec">
+      <div class="sec-title">ℹ Description</div>
+      <p style="font-size:0.85rem;color:var(--parch-dim);font-style:italic;line-height:1.5">${bDef.desc}</p>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">✦ Bonus actuels (Niv. ${bs.level})</div>
+      <div class="effect-list">
+        ${bDef.bonuses.map((b,i)=>`<div class="effect-row"><span class="eff-icon">${['⚡','🛡','✦'][i%3]}</span><span class="eff-text">${b}</span></div>`).join('')}
+      </div>
+    </div>
+
+    ${bs.upgrading ? `
+    <div class="sec">
+      <div class="sec-title">🔨 Amélioration en cours → Niv. ${bs.level+1}</div>
+      <div class="upgrade-progress">
+        <div class="upgrade-bar" id="upg-bar" style="width:${getUpgradeProgress(bs)}%"></div>
+      </div>
+      <p style="font-size:0.78rem;color:var(--frost);text-align:center">
+        ${Math.max(0, bs.upgrading.finishTick - state.tick)} ticks restants
+      </p>
+      <button class="btn-cancel" onclick="cancelUpgrade('${bDef.id}')">✕ Annuler</button>
+    </div>
+    ` : maxed ? `
+    <div style="text-align:center;color:var(--gold);font-family:'Uncial Antiqua',serif;padding:0.8rem">✦ Niveau Maximum ✦</div>
+    ` : `
+    <div class="sec">
+      <div class="sec-title">💰 Coût → Niv. ${bs.level+1} (${duration} ticks)</div>
+      ${renderCostHtml(cost)}
+    </div>
+    <button class="btn-upgrade" onclick="upgradeBuilding('${bDef.id}')" ${!affordable?'disabled':''}>
+      ⬆ Améliorer → Niv. ${bs.level+1}
+    </button>
+    `}
+
+    ${treeHtml}
+  `;
+}
+
+function getUpgradeProgress(bs) {
+  if(!bs.upgrading) return 0;
+  const total = bs.upgrading.duration;
+  const elapsed = total - (bs.upgrading.finishTick - state.tick);
+  return Math.min(100, Math.max(0, (elapsed/total)*100));
+}
+
+function renderCostHtml(cost) {
+  const icons = {wood:'🪵',stone:'🪨',food:'🌾',gold:'🪙'};
+  return `<div class="cost-grid">
+    ${Object.entries(cost).filter(([,v])=>v>0).map(([r,v])=>
+      `<div class="cost-chip ${(state.resources[r]||0)>=v?'ok':'nok'}">${icons[r]} ${v}</div>`
+    ).join('')}
+  </div>`;
+}
+
+// ══════════════════════════════════════════
+//  ACTIONS
+// ══════════════════════════════════════════
+function upgradeBuilding(id) {
+  const bDef = BUILDINGS.find(b=>b.id===id);
+  const bs = getBldState(id);
+  if(!bDef || bs.upgrading) return;
+
+  const cost = getUpgradeCost(bDef, bs.level);
+  if(!canAfford(cost)) { toast('❌ Ressources insuffisantes', 'danger'); return; }
+  if(bs.level >= bDef.maxLvl) { toast('✦ Niveau maximum atteint', 'danger'); return; }
+
+  // Vérif une seule amélioration à la fois
+  const alreadyUpgrading = Object.values(state.buildings).some(b=>b.upgrading);
+  if(alreadyUpgrading) { toast('⚠ Une amélioration est déjà en cours', 'danger'); return; }
+
+  Object.entries(cost).forEach(([r,v])=>{ state.resources[r]-=v; });
+  const duration = upgradeDuration(bs.level);
+  bs.upgrading = { finishTick: state.tick + duration, duration };
+
+  updateResourcesUI();
+  renderBldMarkers();
+  renderBldList();
+  selectBuilding(id);
+  toast(`🔨 ${bDef.name} → Niv. ${bs.level+1} en cours…`);
+}
+
+function buildNew(id) {
+  const bDef = BUILDINGS.find(b=>b.id===id);
+  if(!bDef) return;
+  const bs = getBldState(id);
+  const cost = getUpgradeCost(bDef, 0);
+  if(!canAfford(cost)) { toast('❌ Ressources insuffisantes', 'danger'); return; }
+
+  Object.entries(cost).forEach(([r,v])=>{ state.resources[r]-=v; });
+  const duration = upgradeDuration(0);
+  bs.upgrading = { finishTick: state.tick + duration, duration };
+  bs.level = 0; // sera mis à 1 quand fini
+
+  updateResourcesUI();
+  renderBldMarkers();
+  renderBldList();
+  selectBuilding(id);
+  toast(`🏗 Construction de ${bDef.name} lancée !`, 'success');
+}
+
+function cancelUpgrade(id) {
+  const bs = getBldState(id);
+  if(!bs.upgrading) return;
+  // Rembourser 50%
+  const bDef = BUILDINGS.find(b=>b.id===id);
+  const cost = getUpgradeCost(bDef, bs.level);
+  Object.entries(cost).forEach(([r,v])=>{ state.resources[r]+=Math.floor(v*0.5); });
+  bs.upgrading = null;
+  updateResourcesUI();
+  renderBldMarkers();
+  renderBldList();
+  selectBuilding(id);
+  toast('↩ Amélioration annulée — 50% remboursé');
+}
+
+// ══════════════════════════════════════════
+//  BOUCLE DE JEU
+// ══════════════════════════════════════════
+setInterval(() => {
+  state.tick++;
+  const r = state.resources;
+
+  // Production (toutes les 8 ticks)
+  if(state.tick % 8 === 0) {
+    const farmLvl = getBldState('farm').level || 1;
+    const sawLvl  = getBldState('sawmill').level || 1;
+    const mineLvl = getBldState('mine').level || 1;
+    r.food  += farmLvl * 8;
+    r.wood  += sawLvl  * 6;
+    r.stone += mineLvl * 4;
+    r.gold  += 2;
+    updateResourcesUI();
+  }
+
+  // Vérif upgrades terminées
+  let anyDone = false;
+  Object.entries(state.buildings).forEach(([id, bs]) => {
+    if(bs.upgrading && state.tick >= bs.upgrading.finishTick) {
+      bs.level++;
+      bs.upgrading = null;
+      anyDone = true;
+      const bDef = BUILDINGS.find(b=>b.id===id);
+      toast(`✦ ${bDef?.name} atteint le niveau ${bs.level} !`, 'success');
+      state.glory += 50 * bs.level;
+
+      // Re-check unlocks
+      renderBldMarkers();
+      renderBldList();
+      if(state.selectedBld === id) selectBuilding(id);
+    }
+  });
+
+  // Refresh barre d'upgrade si on regarde un bâtiment en cours
+  if(state.selectedBld) {
+    const bs = getBldState(state.selectedBld);
+    if(bs.upgrading) {
+      const bar = document.getElementById('upg-bar');
+      if(bar) bar.style.width = getUpgradeProgress(bs) + '%';
+    }
+  }
+
+}, 1000);
+
+// ══════════════════════════════════════════
+//  UI
+// ══════════════════════════════════════════
+function updateResourcesUI() {
+  const r = state.resources;
+  document.getElementById('r-wood').textContent  = Math.floor(r.wood);
+  document.getElementById('r-stone').textContent = Math.floor(r.stone);
+  document.getElementById('r-food').textContent  = Math.floor(r.food);
+  document.getElementById('r-gold').textContent  = Math.floor(r.gold);
+  document.getElementById('r-runes').textContent = Math.floor(r.runes);
+  document.getElementById('r-souls').textContent = Math.floor(r.souls);
+  document.getElementById('r-mead').textContent  = Math.floor(r.mead);
+}
+
+function toast(msg, type) {
+  const c = document.getElementById('toasts');
+  const el = document.createElement('div');
+  el.className = 'toast' + (type?' '+type:'');
+  el.textContent = msg;
+  c.appendChild(el);
+  setTimeout(()=>el.remove(), 4000);
+}
+
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+
+// Repositionner les marqueurs au redimensionnement
+window.addEventListener('resize', renderBldMarkers);
+
+// Init !
+init();
+setTimeout(()=>toast('🏰 Bienvenue dans votre village, '+state.player+' !'), 400);
+setTimeout(()=>toast('⚒ Cliquez sur un bâtiment pour l\'améliorer'), 1600);
+</script>
+</body>
+</html>
