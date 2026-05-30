@@ -1,0 +1,1666 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YGGDRASIL — Carte du Monde</title>
+<link href="https://fonts.googleapis.com/css2?family=MedievalSharp&family=Uncial+Antiqua&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   VARIABLES & RESET
+═══════════════════════════════════════════ */
+:root {
+  --ink:        #1a1008;
+  --parch:      #c8a96e;
+  --parch-dark: #9a7a45;
+  --parch-light:#e8d5a3;
+  --blood:      #8b1a1a;
+  --blood-bright:#c0392b;
+  --frost:      #4a9abb;
+  --frost-light:#7ec8e3;
+  --gold:       #d4a017;
+  --gold-light: #f0c040;
+  --moss:       #4a6741;
+  --moss-light: #6b9c5e;
+  --shadow:     rgba(10,5,0,0.7);
+  --rune-glow:  rgba(212,160,23,0.6);
+
+  /* Saisons */
+  --sky-spring: linear-gradient(180deg, #b8d4e8 0%, #d4e8c2 100%);
+  --sky-summer: linear-gradient(180deg, #4a90d9 0%, #87ceeb 60%, #f0e68c 100%);
+  --sky-autumn: linear-gradient(180deg, #8b4513 0%, #cd853f 40%, #daa520 100%);
+  --sky-winter: linear-gradient(180deg, #1a2a3a 0%, #2a4a6a 50%, #c8d8e8 100%);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  font-family: 'IM Fell English', Georgia, serif;
+  background: var(--ink);
+  color: var(--parch);
+  user-select: none;
+}
+
+/* ═══════════════════════════════════════════
+   LAYOUT PRINCIPAL
+═══════════════════════════════════════════ */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: relative;
+}
+
+/* ═══════════════════════════════════════════
+   CIEL / FOND ANIMÉ
+═══════════════════════════════════════════ */
+#sky {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  transition: background 4s ease;
+  background: var(--sky-summer);
+}
+
+.cloud {
+  position: absolute;
+  border-radius: 50px;
+  opacity: 0.15;
+  animation: drift linear infinite;
+}
+
+@keyframes drift {
+  from { transform: translateX(-200px); }
+  to   { transform: translateX(calc(100vw + 200px)); }
+}
+
+.star {
+  position: absolute;
+  background: white;
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 2s;
+}
+
+/* ═══════════════════════════════════════════
+   TOPBAR — BARRE DE STATUT
+═══════════════════════════════════════════ */
+#topbar {
+  position: relative;
+  z-index: 100;
+  background: rgba(15,8,2,0.92);
+  border-bottom: 2px solid var(--parch-dark);
+  padding: 0.5rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 20px rgba(0,0,0,0.8);
+}
+
+#topbar::after {
+  content: '';
+  position: absolute;
+  bottom: -4px; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  opacity: 0.5;
+}
+
+.game-logo {
+  font-family: 'Uncial Antiqua', serif;
+  font-size: 1.4rem;
+  color: var(--gold);
+  letter-spacing: 3px;
+  text-shadow: 0 0 20px var(--rune-glow);
+  flex-shrink: 0;
+  cursor: default;
+}
+
+.game-logo span {
+  font-size: 0.65rem;
+  display: block;
+  letter-spacing: 4px;
+  color: var(--parch-dark);
+  text-align: center;
+  margin-top: -4px;
+}
+
+.topbar-divider {
+  width: 1px;
+  height: 30px;
+  background: var(--parch-dark);
+  opacity: 0.4;
+  flex-shrink: 0;
+}
+
+/* Ressources */
+.res-group {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.res-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: rgba(200,169,110,0.08);
+  border: 1px solid rgba(200,169,110,0.2);
+  border-radius: 3px;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.82rem;
+  transition: border-color 0.3s;
+}
+
+.res-chip:hover { border-color: var(--gold); }
+.res-chip .icon { font-size: 0.9rem; }
+.res-chip .val  { color: var(--parch-light); font-weight: 600; min-width: 28px; }
+.res-chip .rate { color: var(--moss-light); font-size: 0.7rem; }
+.res-chip.rare  { border-color: rgba(212,160,23,0.3); }
+.res-chip.rare .val { color: var(--gold-light); }
+
+/* Météo & Saison */
+.weather-block {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: rgba(200,169,110,0.06);
+  border: 1px solid rgba(200,169,110,0.15);
+  border-radius: 3px;
+  padding: 0.25rem 0.7rem;
+  margin-left: auto;
+}
+
+.season-icon { font-size: 1.2rem; }
+
+.season-info { line-height: 1.2; }
+.season-name { font-size: 0.8rem; color: var(--gold-light); font-family: 'Uncial Antiqua', serif; }
+.weather-desc { font-size: 0.7rem; color: var(--parch-dark); font-style: italic; }
+
+.day-counter {
+  font-family: 'Uncial Antiqua', serif;
+  font-size: 0.75rem;
+  color: var(--parch-dark);
+  letter-spacing: 1px;
+  text-align: right;
+}
+
+.cycle-bar {
+  width: 60px;
+  height: 4px;
+  background: rgba(200,169,110,0.15);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 2px;
+}
+
+.cycle-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 1s linear;
+}
+
+/* Joueur */
+.player-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(200,169,110,0.08);
+  border: 1px solid rgba(200,169,110,0.25);
+  border-radius: 20px;
+  padding: 0.25rem 0.8rem;
+  font-size: 0.82rem;
+  flex-shrink: 0;
+}
+
+.role-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.role-jarl   { background: #c0392b; box-shadow: 0 0 6px #c0392b; }
+.role-chaman { background: #8e44ad; box-shadow: 0 0 6px #8e44ad; }
+.role-skald  { background: #2980b9; box-shadow: 0 0 6px #2980b9; }
+.role-forge  { background: #d35400; box-shadow: 0 0 6px #d35400; }
+
+/* ═══════════════════════════════════════════
+   CONTENEUR CARTE
+═══════════════════════════════════════════ */
+#map-container {
+  position: relative;
+  z-index: 10;
+  flex: 1;
+  overflow: hidden;
+  cursor: grab;
+}
+
+#map-container:active { cursor: grabbing; }
+
+#map-wrap {
+  position: absolute;
+  transform-origin: 0 0;
+  transition: transform 0.05s linear;
+}
+
+/* ═══════════════════════════════════════════
+   GRILLE DE CASES
+═══════════════════════════════════════════ */
+#map-grid {
+  display: grid;
+  grid-template-columns: repeat(17, 64px);
+  grid-template-rows: repeat(17, 64px);
+  gap: 2px;
+  padding: 20px;
+}
+
+.cell {
+  width: 64px;
+  height: 64px;
+  border-radius: 4px;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+  overflow: visible;
+  border: 1px solid transparent;
+}
+
+.cell:hover { transform: scale(1.08); z-index: 50; }
+
+/* Types de terrain */
+.cell-fog {
+  background: radial-gradient(ellipse, #0d0a05 60%, #1a1208);
+  border-color: #2a2010;
+}
+
+.cell-fog::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='64' height='64' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='20' cy='30' r='18' fill='%23151005' opacity='.6'/%3E%3Ccircle cx='45' cy='20' r='14' fill='%231a1508' opacity='.5'/%3E%3C/svg%3E");
+  border-radius: 4px;
+}
+
+.cell-plains {
+  background: linear-gradient(135deg, #5a7a35 0%, #4a6a28 50%, #3d5a22 100%);
+  border-color: #3a5a20;
+}
+
+.cell-forest {
+  background: linear-gradient(135deg, #2d4a1a 0%, #1e3510 60%, #2a4515 100%);
+  border-color: #1a3010;
+}
+
+.cell-mountain {
+  background: linear-gradient(160deg, #6a5a4a 0%, #4a3a2a 50%, #3a2a1a 100%);
+  border-color: #3a2a1a;
+}
+
+.cell-water {
+  background: linear-gradient(135deg, #1a4a6a 0%, #0d2d4a 60%, #152840 100%);
+  border-color: #0d2030;
+  animation: waterShimmer 3s ease-in-out infinite;
+}
+
+@keyframes waterShimmer {
+  0%,100% { filter: brightness(1); }
+  50%      { filter: brightness(1.15); }
+}
+
+.cell-tundra {
+  background: linear-gradient(135deg, #8ab4c8 0%, #6a94a8 50%, #5a8498 100%);
+  border-color: #5a8090;
+}
+
+.cell-swamp {
+  background: linear-gradient(135deg, #3a4a1a 0%, #2a3a10 60%, #1e2e0d 100%);
+  border-color: #1a2a08;
+}
+
+.cell-ruins {
+  background: linear-gradient(135deg, #4a3a2a 0%, #3a2a1a 50%, #2a1a0a 100%);
+  border-color: #2a1a08;
+}
+
+/* Surbrillance hover */
+.cell:not(.cell-fog):hover {
+  box-shadow: 0 0 0 2px var(--gold), 0 4px 16px rgba(212,160,23,0.3);
+  border-color: var(--gold);
+}
+
+/* Icône de case */
+.cell-icon {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.8rem;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.8));
+  transition: transform 0.2s;
+}
+
+.cell:hover .cell-icon { transform: translate(-50%, -55%) scale(1.15); }
+
+/* Badge de case (ressources, danger...) */
+.cell-badge {
+  position: absolute;
+  top: 2px; right: 2px;
+  font-size: 0.55rem;
+  background: rgba(10,5,0,0.85);
+  border: 1px solid var(--parch-dark);
+  border-radius: 3px;
+  padding: 1px 3px;
+  color: var(--parch-light);
+  pointer-events: none;
+  letter-spacing: 0.5px;
+}
+
+/* Marqueurs d'événements (traces visuelles) */
+.cell-event {
+  position: absolute;
+  bottom: 2px; left: 2px;
+  font-size: 0.65rem;
+  pointer-events: none;
+  animation: eventPulse 2s ease-in-out infinite;
+}
+
+@keyframes eventPulse {
+  0%,100% { opacity: 0.8; transform: scale(1); }
+  50%      { opacity: 1; transform: scale(1.2); }
+}
+
+/* Village allié */
+.cell-village-ally {
+  box-shadow: 0 0 12px rgba(100,200,80,0.4), inset 0 0 8px rgba(100,200,80,0.1);
+  border-color: rgba(100,200,80,0.6) !important;
+}
+
+/* Village ennemi */
+.cell-village-enemy {
+  box-shadow: 0 0 12px rgba(200,60,40,0.4), inset 0 0 8px rgba(200,60,40,0.1);
+  border-color: rgba(200,60,40,0.6) !important;
+}
+
+/* Frontière de royaume */
+.cell-border-top    { border-top: 2px solid rgba(212,160,23,0.5) !important; }
+.cell-border-left   { border-left: 2px solid rgba(212,160,23,0.5) !important; }
+
+/* ═══════════════════════════════════════════
+   MINIMAP
+═══════════════════════════════════════════ */
+#minimap {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 200;
+  background: rgba(10,5,0,0.9);
+  border: 1px solid var(--parch-dark);
+  border-radius: 4px;
+  padding: 6px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+}
+
+#minimap-canvas {
+  display: block;
+  width: 120px;
+  height: 120px;
+  image-rendering: pixelated;
+}
+
+.minimap-label {
+  font-size: 0.6rem;
+  color: var(--parch-dark);
+  text-align: center;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+
+/* ═══════════════════════════════════════════
+   MENU RADIAL
+═══════════════════════════════════════════ */
+#radial-menu {
+  position: fixed;
+  z-index: 500;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+#radial-menu.open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.radial-center {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: rgba(10,5,0,0.95);
+  border: 2px solid var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  box-shadow: 0 0 20px var(--rune-glow);
+  z-index: 10;
+}
+
+.radial-btn {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: rgba(15,8,2,0.95);
+  border: 1.5px solid var(--parch-dark);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.6);
+}
+
+.radial-btn:hover {
+  background: rgba(212,160,23,0.15);
+  border-color: var(--gold);
+  transform: translate(-50%, -50%) scale(1.15);
+  box-shadow: 0 0 15px var(--rune-glow);
+}
+
+.radial-btn .r-icon { font-size: 1.1rem; }
+.radial-btn .r-label {
+  font-size: 0.5rem;
+  color: var(--parch-dark);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-top: 1px;
+  white-space: nowrap;
+}
+
+.radial-btn:hover .r-label { color: var(--gold-light); }
+
+/* Ligne de connexion radiale */
+.radial-line {
+  position: absolute;
+  transform-origin: 0 50%;
+  height: 1px;
+  background: linear-gradient(90deg, var(--gold), transparent);
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════
+   PANNEAU VILLAGE
+═══════════════════════════════════════════ */
+#village-panel {
+  position: fixed;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%) translateX(-120%);
+  z-index: 300;
+  width: 280px;
+  background: rgba(12,6,2,0.97);
+  border: 1px solid var(--parch-dark);
+  border-radius: 6px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.8), inset 0 1px 0 rgba(212,160,23,0.1);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow: hidden;
+}
+
+#village-panel.open {
+  transform: translateY(-50%) translateX(0);
+}
+
+.panel-header {
+  background: rgba(212,160,23,0.08);
+  border-bottom: 1px solid rgba(212,160,23,0.2);
+  padding: 0.8rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.panel-icon { font-size: 1.6rem; }
+
+.panel-title-block { flex: 1; }
+.panel-title {
+  font-family: 'Uncial Antiqua', serif;
+  font-size: 1rem;
+  color: var(--gold-light);
+  letter-spacing: 1px;
+}
+
+.panel-subtitle { font-size: 0.75rem; color: var(--parch-dark); font-style: italic; }
+
+.panel-close {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: rgba(200,169,110,0.1);
+  border: 1px solid var(--parch-dark);
+  color: var(--parch-dark);
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.panel-close:hover { background: rgba(200,60,40,0.2); border-color: var(--blood-bright); color: var(--blood-bright); }
+
+.panel-body { padding: 0.8rem 1rem; }
+
+.panel-section { margin-bottom: 1rem; }
+
+.panel-section-title {
+  font-size: 0.65rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--parch-dark);
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid rgba(200,169,110,0.1);
+}
+
+/* Barre de gloire */
+.glory-bar-wrap {
+  background: rgba(0,0,0,0.4);
+  border-radius: 3px;
+  height: 8px;
+  overflow: hidden;
+  margin-top: 0.3rem;
+}
+
+.glory-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--gold-light));
+  border-radius: 3px;
+  transition: width 1s ease;
+  box-shadow: 0 0 6px rgba(212,160,23,0.5);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+}
+
+.stat-item {
+  background: rgba(200,169,110,0.05);
+  border: 1px solid rgba(200,169,110,0.1);
+  border-radius: 3px;
+  padding: 0.35rem 0.5rem;
+}
+
+.stat-label { font-size: 0.65rem; color: var(--parch-dark); }
+.stat-val   { font-size: 0.95rem; color: var(--parch-light); font-weight: 600; }
+
+.building-list { display: flex; flex-direction: column; gap: 0.3rem; }
+
+.bld-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.5rem;
+  background: rgba(200,169,110,0.04);
+  border: 1px solid rgba(200,169,110,0.08);
+  border-radius: 3px;
+}
+
+.bld-icon { font-size: 1rem; }
+.bld-name { flex: 1; font-size: 0.82rem; }
+.bld-lvl  {
+  font-size: 0.7rem;
+  background: rgba(212,160,23,0.12);
+  border: 1px solid rgba(212,160,23,0.25);
+  border-radius: 10px;
+  padding: 1px 6px;
+  color: var(--gold);
+}
+
+.panel-action-btn {
+  display: block;
+  width: 100%;
+  padding: 0.55rem;
+  font-family: 'Uncial Antiqua', serif;
+  font-size: 0.8rem;
+  letter-spacing: 1.5px;
+  background: rgba(212,160,23,0.1);
+  border: 1px solid rgba(212,160,23,0.4);
+  color: var(--gold);
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.2s;
+  margin-top: 0.5rem;
+  text-align: center;
+}
+
+.panel-action-btn:hover {
+  background: rgba(212,160,23,0.22);
+  box-shadow: 0 0 12px rgba(212,160,23,0.2);
+}
+
+/* ═══════════════════════════════════════════
+   PANNEAU INFO CASE
+═══════════════════════════════════════════ */
+#cell-info {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(120%);
+  z-index: 300;
+  background: rgba(12,6,2,0.97);
+  border: 1px solid var(--parch-dark);
+  border-radius: 4px;
+  padding: 0.6rem 1.2rem;
+  min-width: 220px;
+  text-align: center;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.7);
+}
+
+#cell-info.open { transform: translateX(-50%) translateY(0); }
+
+.cell-info-name {
+  font-family: 'Uncial Antiqua', serif;
+  color: var(--gold-light);
+  font-size: 0.95rem;
+  margin-bottom: 0.2rem;
+}
+
+.cell-info-desc { font-size: 0.8rem; color: var(--parch-dark); font-style: italic; }
+.cell-info-effects { font-size: 0.75rem; color: var(--parch); margin-top: 0.3rem; }
+
+/* ═══════════════════════════════════════════
+   ÉVÉNEMENT / TOAST
+═══════════════════════════════════════════ */
+#event-overlay {
+  position: fixed;
+  top: 5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 600;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.event-toast {
+  background: rgba(10,5,0,0.97);
+  border: 1px solid var(--gold);
+  border-radius: 4px;
+  padding: 0.6rem 1.4rem;
+  font-family: 'Uncial Antiqua', serif;
+  font-size: 0.85rem;
+  color: var(--gold-light);
+  letter-spacing: 1px;
+  box-shadow: 0 4px 20px rgba(212,160,23,0.2);
+  animation: toastIn 0.4s cubic-bezier(0.34,1.56,0.64,1), toastOut 0.3s ease 3.5s forwards;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+@keyframes toastIn  { from { opacity:0; transform: translateY(-20px) scale(0.9); } }
+@keyframes toastOut { to   { opacity:0; transform: translateY(-10px); } }
+
+/* ═══════════════════════════════════════════
+   LÉGENDE
+═══════════════════════════════════════════ */
+#legend {
+  position: fixed;
+  bottom: 1rem;
+  left: 1rem;
+  z-index: 200;
+  background: rgba(10,5,0,0.85);
+  border: 1px solid rgba(200,169,110,0.2);
+  border-radius: 4px;
+  padding: 0.5rem 0.8rem;
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  max-width: 280px;
+  backdrop-filter: blur(3px);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.65rem;
+  color: var(--parch-dark);
+}
+
+.legend-dot {
+  width: 10px; height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════
+   CONTRÔLES ZOOM
+═══════════════════════════════════════════ */
+#zoom-controls {
+  position: fixed;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.zoom-btn {
+  width: 34px; height: 34px;
+  background: rgba(10,5,0,0.9);
+  border: 1px solid var(--parch-dark);
+  border-radius: 4px;
+  color: var(--parch);
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.zoom-btn:hover { border-color: var(--gold); color: var(--gold); background: rgba(212,160,23,0.1); }
+
+/* ═══════════════════════════════════════════
+   EFFET MÉTÉO OVERLAY
+═══════════════════════════════════════════ */
+#weather-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 15;
+  pointer-events: none;
+  transition: opacity 2s;
+}
+
+/* Neige */
+.snowflake {
+  position: absolute;
+  top: -10px;
+  color: rgba(200,230,255,0.7);
+  font-size: 1rem;
+  animation: snowfall linear infinite;
+  pointer-events: none;
+}
+
+@keyframes snowfall {
+  to { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+}
+
+/* Pluie */
+.raindrop {
+  position: absolute;
+  top: -20px;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, rgba(120,160,200,0.5));
+  animation: rainfall linear infinite;
+}
+
+@keyframes rainfall {
+  to { transform: translateY(100vh); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════ */
+@media (max-width: 600px) {
+  .res-chip .rate { display: none; }
+  .weather-block  { display: none; }
+  #legend         { display: none; }
+  #village-panel  { width: calc(100vw - 2rem); left: 1rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- FOND ANIMÉ -->
+<div id="sky"></div>
+<div id="weather-overlay"></div>
+
+<!-- ═══════════ TOPBAR ═══════════ -->
+<div id="topbar">
+  <div class="game-logo">YGGDRASIL<span>⁂ les neuf royaumes ⁂</span></div>
+
+  <div class="topbar-divider"></div>
+
+  <!-- Ressources normales -->
+  <div class="res-group">
+    <div class="res-chip" title="Bois">
+      <span class="icon">🪵</span>
+      <span class="val" id="r-wood">480</span>
+      <span class="rate">+6/t</span>
+    </div>
+    <div class="res-chip" title="Pierre">
+      <span class="icon">🪨</span>
+      <span class="val" id="r-stone">320</span>
+      <span class="rate">+4/t</span>
+    </div>
+    <div class="res-chip" title="Nourriture">
+      <span class="icon">🌾</span>
+      <span class="val" id="r-food">610</span>
+      <span class="rate">+8/t</span>
+    </div>
+    <div class="res-chip" title="Or">
+      <span class="icon">🪙</span>
+      <span class="val" id="r-gold">145</span>
+      <span class="rate">+2/t</span>
+    </div>
+  </div>
+
+  <div class="topbar-divider"></div>
+
+  <!-- Ressources rares -->
+  <div class="res-group">
+    <div class="res-chip rare" title="Runes — ressource mystique">
+      <span class="icon">ᚱ</span>
+      <span class="val" id="r-runes">12</span>
+    </div>
+    <div class="res-chip rare" title="Âmes — offrandes aux dieux">
+      <span class="icon">☠</span>
+      <span class="val" id="r-souls">3</span>
+    </div>
+    <div class="res-chip rare" title="Hydromel sacré">
+      <span class="icon">🍺</span>
+      <span class="val" id="r-mead">28</span>
+    </div>
+  </div>
+
+  <!-- Météo & Saison -->
+  <div class="weather-block">
+    <div class="season-icon" id="season-icon">☀️</div>
+    <div class="season-info">
+      <div class="season-name" id="season-name">Été</div>
+      <div class="weather-desc" id="weather-desc">Ciel dégagé, raids favorables</div>
+    </div>
+    <div>
+      <div class="day-counter">Jour <span id="day-num">14</span> / 49</div>
+      <div class="cycle-bar">
+        <div class="cycle-fill" id="cycle-fill" style="width:28%;background:#d4a017;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Joueur -->
+  <div class="player-chip">
+    <div class="role-dot role-jarl"></div>
+    <span id="player-name">Ragnar</span>
+    <span style="color:var(--parch-dark);font-size:0.7rem;">· Jarl</span>
+  </div>
+</div>
+
+<!-- ═══════════ CARTE ═══════════ -->
+<div id="map-container">
+  <div id="map-wrap">
+    <div id="map-grid"></div>
+  </div>
+</div>
+
+<!-- ═══════════ MENU RADIAL ═══════════ -->
+<div id="radial-menu">
+  <div class="radial-center" id="radial-center"></div>
+</div>
+
+<!-- ═══════════ PANNEAU VILLAGE ═══════════ -->
+<div id="village-panel">
+  <div class="panel-header">
+    <div class="panel-icon" id="vp-icon">🏰</div>
+    <div class="panel-title-block">
+      <div class="panel-title" id="vp-title">Village de Ragnar</div>
+      <div class="panel-subtitle" id="vp-subtitle">Midgard · Village allié</div>
+    </div>
+    <button class="panel-close" onclick="closeVillagePanel()">✕</button>
+  </div>
+  <div class="panel-body">
+    <div class="panel-section">
+      <div class="panel-section-title">⚔ Gloire de l'alliance</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem;">
+        <span style="font-size:0.8rem;color:var(--gold);" id="vp-glory">1 240 pts</span>
+        <span style="font-size:0.7rem;color:var(--parch-dark);">Valhalla : 10 000</span>
+      </div>
+      <div class="glory-bar-wrap">
+        <div class="glory-bar" id="vp-glory-bar" style="width:12.4%"></div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">📊 Statistiques</div>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="stat-label">Population</div>
+          <div class="stat-val" id="vp-pop">248</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Troupes</div>
+          <div class="stat-val" id="vp-troops">43</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Défense</div>
+          <div class="stat-val" id="vp-def">186</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Stade</div>
+          <div class="stat-val" id="vp-stage">2 / 5</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">🏗 Bâtiments principaux</div>
+      <div class="building-list" id="vp-buildings">
+        <div class="bld-row"><span class="bld-icon">🌾</span><span class="bld-name">Ferme</span><span class="bld-lvl">Niv. 3</span></div>
+        <div class="bld-row"><span class="bld-icon">🪵</span><span class="bld-name">Scierie</span><span class="bld-lvl">Niv. 2</span></div>
+        <div class="bld-row"><span class="bld-icon">🏟</span><span class="bld-name">Caserne</span><span class="bld-lvl">Niv. 2</span></div>
+        <div class="bld-row"><span class="bld-icon">🧱</span><span class="bld-name">Remparts</span><span class="bld-lvl">Niv. 1</span></div>
+      </div>
+    </div>
+
+    <button class="panel-action-btn" onclick="toast('🏘 Module Village — prochain sprint !')">
+      ⚒ Gérer le Village →
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════ INFO CASE ═══════════ -->
+<div id="cell-info">
+  <div class="cell-info-name" id="ci-name">Plaine fertile</div>
+  <div class="cell-info-desc" id="ci-desc">Terres douces de Midgard, idéales pour l'agriculture.</div>
+  <div class="cell-info-effects" id="ci-effects"></div>
+</div>
+
+<!-- ═══════════ ÉVÉNEMENTS ═══════════ -->
+<div id="event-overlay"></div>
+
+<!-- ═══════════ CONTRÔLES ZOOM ═══════════ -->
+<div id="zoom-controls">
+  <button class="zoom-btn" onclick="zoomIn()" title="Zoom +">＋</button>
+  <button class="zoom-btn" onclick="zoomOut()" title="Zoom −">－</button>
+  <button class="zoom-btn" onclick="resetView()" title="Centrer">⌖</button>
+</div>
+
+<!-- ═══════════ MINIMAP ═══════════ -->
+<div id="minimap">
+  <div class="minimap-label">Carte</div>
+  <canvas id="minimap-canvas" width="120" height="120"></canvas>
+</div>
+
+<!-- ═══════════ LÉGENDE ═══════════ -->
+<div id="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#4a6a28"></div>Plaine</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#1e3510"></div>Forêt</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#4a3a2a"></div>Montagne</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#1a4a6a"></div>Eau</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#8ab4c8"></div>Toundra</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#0d0a05"></div>Brouillard</div>
+  <div class="legend-item"><div class="legend-dot" style="background:rgba(100,200,80,0.5);border:1px solid rgba(100,200,80,0.8)"></div>Allié</div>
+  <div class="legend-item"><div class="legend-dot" style="background:rgba(200,60,40,0.5);border:1px solid rgba(200,60,40,0.8)"></div>Ennemi</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  DONNÉES DE JEU
+// ═══════════════════════════════════════════
+const GRID_SIZE = 17;
+const TOTAL_CELLS = GRID_SIZE * GRID_SIZE;
+
+// Saisons
+const SEASONS = [
+  {
+    id:'spring', name:'Printemps', icon:'🌸',
+    skyGrad: 'linear-gradient(180deg,#a8d8ea 0%,#c8e6c2 100%)',
+    cycleColor:'#6ab04c',
+    weathers:[
+      { desc:'Rosée matinale, champs en fleur',     effect:'🌿 Production +30%',  type:'clear'  },
+      { desc:'Pluie douce, routes un peu boueuses', effect:'🛤 Trajets +10%',      type:'rain'   },
+      { desc:'Draugr attardés dans les marais',     effect:'💀 Créatures actives', type:'eerie'  },
+    ]
+  },
+  {
+    id:'summer', name:'Été', icon:'☀️',
+    skyGrad: 'linear-gradient(180deg,#2980b9 0%,#74b9e0 60%,#f0e68c 100%)',
+    cycleColor:'#d4a017',
+    weathers:[
+      { desc:'Ciel dégagé, raids favorables',       effect:'⚔ Raids +20%',        type:'clear'  },
+      { desc:'Chaleur accablante, soldats fatigués', effect:'🌡 Recrutement +15%',  type:'hot'    },
+      { desc:'Sécheresse — puits à surveiller',     effect:'🌾 Nourriture -20%',   type:'drought'},
+    ]
+  },
+  {
+    id:'autumn', name:'Automne', icon:'🍂',
+    skyGrad: 'linear-gradient(180deg,#6d4c41 0%,#bf8654 40%,#d4a017 100%)',
+    cycleColor:'#bf8654',
+    weathers:[
+      { desc:'Récolte abondante, celliers pleins',  effect:'🌾 Ressources x2',     type:'harvest'},
+      { desc:'Tempête de feuilles, sorts perturbés',effect:'🌪 Sorts bloqués',      type:'storm'  },
+      { desc:'Ombre s\'épaissit, créatures proches',effect:'👁 Créatures rôdent',   type:'eerie'  },
+    ]
+  },
+  {
+    id:'winter', name:'Hiver', icon:'❄️',
+    skyGrad: 'linear-gradient(180deg,#0d1b2a 0%,#1a3a5c 50%,#c8d8e8 100%)',
+    cycleColor:'#7ec8e3',
+    weathers:[
+      { desc:'Neige épaisse, magie amplifiée',      effect:'🔮 Sorts chaman +40%', type:'snow'   },
+      { desc:'Nuit de Sköll — brouillard étendu',   effect:'🌫 Brouillard x2',     type:'fog'    },
+      { desc:'Blizzard — troupes vulnérables',      effect:'❄ Production -50%',    type:'blizzard'},
+    ]
+  },
+];
+
+// Types de terrain
+const TERRAINS = {
+  fog:      { name:'Brouillard de guerre', desc:'Zone inexplorée, dangereuse et inconnue.',                          icon:'',   bg:'cell-fog'      },
+  plains:   { name:'Plaine fertile',       desc:'Terres douces de Midgard, idéales pour l\'agriculture.',           icon:'🌿', bg:'cell-plains'   },
+  forest:   { name:'Forêt ancienne',       desc:'Arbres millénaires où se cachent créatures et secrets runiques.',  icon:'🌲', bg:'cell-forest'   },
+  mountain: { name:'Montagne glacée',      desc:'Pics escarpés riches en minerai, difficiles à traverser.',         icon:'⛰', bg:'cell-mountain' },
+  water:    { name:'Lac sacré',            desc:'Eaux sombres reliées à Niflheim, source de Runes rares.',          icon:'🌊', bg:'cell-water'    },
+  tundra:   { name:'Toundra nordique',     desc:'Terres gelées à la frontière de Jötunheim.',                       icon:'🏔', bg:'cell-tundra'   },
+  swamp:    { name:'Marais des morts',     desc:'Terres maudites où errent les Draugr. Évitez la nuit.',            icon:'🌿', bg:'cell-swamp'    },
+  ruins:    { name:'Ruines oubliées',      desc:'Restes d\'un clan défait. Artefacts et dangers s\'y côtoient.',    icon:'🏚', bg:'cell-ruins'    },
+};
+
+// Actions radiales par type de case
+const RADIAL_ACTIONS = {
+  village_ally:  [
+    { icon:'🏘', label:'Gérer',    angle: 270, action: 'openVillagePanel' },
+    { icon:'⚔',  label:'Troupes',  angle: 330, action: 'showTroops'       },
+    { icon:'🛡',  label:'Défense',  angle: 30,  action: 'showDefense'      },
+    { icon:'📜',  label:'Quêtes',   angle: 90,  action: 'showQuests'       },
+  ],
+  village_enemy: [
+    { icon:'⚔',  label:'Attaquer', angle: 270, action: 'attackVillage'    },
+    { icon:'🕵',  label:'Espionner',angle: 330, action: 'spyVillage'       },
+    { icon:'📜',  label:'Infos',    angle: 30,  action: 'showEnemyInfo'    },
+  ],
+  plains:   [
+    { icon:'⛺', label:'Camper',    angle: 270, action: 'camp'             },
+    { icon:'🔍', label:'Explorer',  angle: 330, action: 'explore'          },
+    { icon:'🌾', label:'Récolter',  angle: 30,  action: 'harvest'          },
+  ],
+  forest:   [
+    { icon:'🪵', label:'Couper',    angle: 270, action: 'chop'             },
+    { icon:'🔍', label:'Explorer',  angle: 330, action: 'explore'          },
+    { icon:'🏹', label:'Chasser',   angle: 30,  action: 'hunt'             },
+  ],
+  mountain: [
+    { icon:'⛏',  label:'Miner',    angle: 270, action: 'mine'             },
+    { icon:'🔍', label:'Escalader', angle: 330, action: 'explore'          },
+  ],
+  water:    [
+    { icon:'🎣', label:'Pêcher',    angle: 270, action: 'fish'             },
+    { icon:'ᚱ',  label:'Runes',     angle: 330, action: 'runes'            },
+  ],
+  ruins:    [
+    { icon:'🔍', label:'Fouiller',  angle: 270, action: 'loot'             },
+    { icon:'⚔',  label:'Purger',    angle: 330, action: 'cleanse'          },
+  ],
+  default:  [
+    { icon:'🔍', label:'Explorer',  angle: 300, action: 'explore'          },
+  ],
+};
+
+// État du jeu
+const gameState = {
+  season: 1,       // 0-3 (printemps=0)
+  dayInSeason: 14,
+  totalDays: 49,
+  weatherIdx: 0,
+  resources: { wood:480, stone:320, food:610, gold:145, runes:12, souls:3, mead:28 },
+  cells: [],        // généré ci-dessous
+  exploredSet: new Set(),
+  tick: 0,
+};
+
+// ═══════════════════════════════════════════
+//  GÉNÉRATION DE LA CARTE
+// ═══════════════════════════════════════════
+function generateMap() {
+  const cells = [];
+  // Graine pseudo-aléatoire déterministe
+  let seed = 42;
+  function rng() { seed = (seed * 1664525 + 1013904223) & 0xffffffff; return (seed >>> 0) / 0xffffffff; }
+
+  const typeWeights = [
+    {t:'plains',   w:28},
+    {t:'forest',   w:22},
+    {t:'mountain', w:14},
+    {t:'water',    w:10},
+    {t:'tundra',   w:10},
+    {t:'swamp',    w:8 },
+    {t:'ruins',    w:8 },
+  ];
+  const totalW = typeWeights.reduce((s,x)=>s+x.w,0);
+
+  function pickTerrain(r) {
+    let acc=0; const v=r*totalW;
+    for(const {t,w} of typeWeights){ acc+=w; if(v<acc) return t; }
+    return 'plains';
+  }
+
+  for(let i=0; i<TOTAL_CELLS; i++) {
+    const row = Math.floor(i/GRID_SIZE);
+    const col = i % GRID_SIZE;
+    let type = pickTerrain(rng());
+
+    // Village allié au centre
+    const cx=8, cy=8;
+    if(row===cy && col===cx) type='village_ally';
+
+    // Villages ennemis
+    if(row===3 && col===13) type='village_enemy';
+    if(row===13 && col===3) type='village_enemy';
+    if(row===5  && col===2) type='village_enemy';
+
+    // Événements visuels (traces météo)
+    let event = null;
+    if(rng()<0.06) event = ['⚡','💀','🔥','❄','🌊'][Math.floor(rng()*5)];
+
+    // Ressource bonus
+    let bonus = null;
+    if(rng()<0.12 && type!=='fog' && type!=='village_ally' && type!=='village_enemy') {
+      bonus = ['🪵','🪨','🌾','🪙','ᚱ'][Math.floor(rng()*5)];
+    }
+
+    cells.push({ idx:i, row, col, type, event, bonus, explored: false });
+  }
+
+  // Zone explorée initiale : 5x5 autour du village
+  for(let i=0;i<TOTAL_CELLS;i++){
+    const {row,col} = cells[i];
+    if(Math.abs(row-8)<=2 && Math.abs(col-8)<=2) {
+      cells[i].explored = true;
+      gameState.exploredSet.add(i);
+    }
+  }
+
+  return cells;
+}
+
+// ═══════════════════════════════════════════
+//  RENDU DE LA GRILLE
+// ═══════════════════════════════════════════
+function renderGrid() {
+  const grid = document.getElementById('map-grid');
+  grid.innerHTML = '';
+
+  gameState.cells.forEach((cell, i) => {
+    const el = document.createElement('div');
+    el.dataset.idx = i;
+
+    if(!cell.explored) {
+      el.className = 'cell cell-fog';
+      el.addEventListener('click', (e) => onCellClick(e, i));
+      grid.appendChild(el);
+      return;
+    }
+
+    const terr = TERRAINS[cell.type] || TERRAINS.plains;
+    el.className = `cell ${terr.bg}`;
+
+    if(cell.type === 'village_ally')  el.classList.add('cell-village-ally');
+    if(cell.type === 'village_enemy') el.classList.add('cell-village-enemy');
+
+    // Bordures royaume (exemple Jötunheim au nord)
+    if(cell.row <= 3) el.classList.add('cell-border-top');
+
+    // Icône principale
+    if(terr.icon) {
+      const icon = document.createElement('div');
+      icon.className = 'cell-icon';
+      icon.textContent = cell.type === 'village_ally'  ? '🏰' :
+                         cell.type === 'village_enemy' ? '💀' : terr.icon;
+      el.appendChild(icon);
+    }
+
+    // Badge ressource
+    if(cell.bonus) {
+      const badge = document.createElement('div');
+      badge.className = 'cell-badge';
+      badge.textContent = cell.bonus;
+      el.appendChild(badge);
+    }
+
+    // Trace d'événement météo
+    if(cell.event) {
+      const ev = document.createElement('div');
+      ev.className = 'cell-event';
+      ev.textContent = cell.event;
+      el.appendChild(ev);
+    }
+
+    el.addEventListener('click', (e) => onCellClick(e, i));
+    el.addEventListener('mouseenter', () => showCellInfo(i));
+    el.addEventListener('mouseleave', hideCellInfo);
+
+    grid.appendChild(el);
+  });
+
+  renderMinimap();
+}
+
+// ═══════════════════════════════════════════
+//  INTERACTIONS
+// ═══════════════════════════════════════════
+let radialTarget = null;
+
+function onCellClick(e, idx) {
+  e.stopPropagation();
+  const cell = gameState.cells[idx];
+
+  // Case dans le brouillard → explorer les adjacentes
+  if(!cell.explored) {
+    exploreAround(idx);
+    toast('🔍 Zone explorée !');
+    return;
+  }
+
+  openRadialMenu(e.clientX, e.clientY, cell);
+}
+
+function exploreAround(idx) {
+  const {row, col} = gameState.cells[idx];
+  for(let dr=-1; dr<=1; dr++) {
+    for(let dc=-1; dc<=1; dc++) {
+      const r2=row+dr, c2=col+dc;
+      if(r2<0||r2>=GRID_SIZE||c2<0||c2>=GRID_SIZE) continue;
+      const ni = r2*GRID_SIZE+c2;
+      gameState.cells[ni].explored = true;
+      gameState.exploredSet.add(ni);
+    }
+  }
+  renderGrid();
+}
+
+function openRadialMenu(x, y, cell) {
+  closeRadialMenu();
+  radialTarget = cell;
+
+  const menu = document.getElementById('radial-menu');
+  menu.innerHTML = '';
+
+  // Centre
+  const center = document.createElement('div');
+  center.className = 'radial-center';
+  center.style.left = x + 'px';
+  center.style.top  = y + 'px';
+  center.textContent = cell.type === 'village_ally'  ? '🏰' :
+                       cell.type === 'village_enemy' ? '💀' :
+                       (TERRAINS[cell.type]?.icon || '🔍');
+  menu.appendChild(center);
+
+  // Actions selon le type
+  const actions = RADIAL_ACTIONS[cell.type] || RADIAL_ACTIONS.default;
+  const radius = 72;
+
+  actions.forEach(action => {
+    const angle = (action.angle - 90) * (Math.PI / 180);
+    const bx = x + Math.cos(angle) * radius;
+    const by = y + Math.sin(angle) * radius;
+
+    // Ligne
+    const line = document.createElement('div');
+    line.className = 'radial-line';
+    const dist = Math.sqrt((bx-x)**2 + (by-y)**2);
+    const lineAngle = Math.atan2(by-y, bx-x) * 180/Math.PI;
+    line.style.cssText = `left:${x}px;top:${y}px;width:${dist}px;transform:rotate(${lineAngle}deg);`;
+    menu.appendChild(line);
+
+    // Bouton
+    const btn = document.createElement('div');
+    btn.className = 'radial-btn';
+    btn.style.left = bx + 'px';
+    btn.style.top  = by + 'px';
+    btn.innerHTML = `<span class="r-icon">${action.icon}</span><span class="r-label">${action.label}</span>`;
+    btn.addEventListener('click', (e) => { e.stopPropagation(); handleRadialAction(action.action, cell); });
+    menu.appendChild(btn);
+  });
+
+  menu.classList.add('open');
+}
+
+function closeRadialMenu() {
+  const menu = document.getElementById('radial-menu');
+  menu.classList.remove('open');
+}
+
+function handleRadialAction(action, cell) {
+  closeRadialMenu();
+  switch(action) {
+    case 'openVillagePanel': openVillagePanel(); break;
+    case 'explore':          exploreAround(cell.idx); toast('🔍 Expédition lancée !'); break;
+    case 'harvest':          gameState.resources.food += 40; toast('🌾 +40 Nourriture récoltée !'); updateResources(); break;
+    case 'chop':             gameState.resources.wood += 35; toast('🪵 +35 Bois coupé !');          updateResources(); break;
+    case 'mine':             gameState.resources.stone+= 30; toast('⛏ +30 Pierre extraite !');       updateResources(); break;
+    case 'fish':             gameState.resources.food += 25; toast('🎣 +25 Poissons pêchés !');      updateResources(); break;
+    case 'runes':            gameState.resources.runes+= 2;  toast('ᚱ +2 Runes découvertes !');      updateResources(); break;
+    case 'hunt':             gameState.resources.food += 20; gameState.resources.mead += 5;
+                             toast('🏹 Chasse fructueuse ! +20 🌾 +5 🍺'); updateResources(); break;
+    case 'loot':             lootRuins(cell); break;
+    case 'attackVillage':    toast('⚔ Module Combat — prochain sprint !'); break;
+    case 'spyVillage':       toast('🕵 Module Espionnage — prochain sprint !'); break;
+    default: toast(`✦ ${action} — bientôt disponible !`);
+  }
+}
+
+function lootRuins(cell) {
+  const loot = [
+    ()=>{ gameState.resources.gold+=50; return '🪙 +50 Or trouvé dans les ruines !'; },
+    ()=>{ gameState.resources.runes+=3; return 'ᚱ +3 Runes gravées sur les pierres !'; },
+    ()=>{ gameState.resources.souls+=1; return '☠ +1 Âme libérée des ruines !'; },
+    ()=>{ return '⚠ Piège ! Des Draugr surgissent des ruines !'; },
+  ];
+  const result = loot[Math.floor(Math.random()*loot.length)]();
+  toast(result);
+  updateResources();
+}
+
+// ═══════════════════════════════════════════
+//  VILLAGE PANEL
+// ═══════════════════════════════════════════
+function openVillagePanel() {
+  document.getElementById('village-panel').classList.add('open');
+}
+
+function closeVillagePanel() {
+  document.getElementById('village-panel').classList.remove('open');
+}
+
+// ═══════════════════════════════════════════
+//  INFO CASE
+// ═══════════════════════════════════════════
+let cellInfoTimeout = null;
+
+function showCellInfo(idx) {
+  const cell = gameState.cells[idx];
+  if(!cell.explored) return;
+
+  const terr = TERRAINS[cell.type] || TERRAINS.plains;
+  document.getElementById('ci-name').textContent   = terr.name;
+  document.getElementById('ci-desc').textContent   = terr.desc;
+  document.getElementById('ci-effects').textContent= cell.bonus ? `Ressource détectée : ${cell.bonus}` : '';
+
+  if(cellInfoTimeout) clearTimeout(cellInfoTimeout);
+  document.getElementById('cell-info').classList.add('open');
+}
+
+function hideCellInfo() {
+  cellInfoTimeout = setTimeout(() => {
+    document.getElementById('cell-info').classList.remove('open');
+  }, 300);
+}
+
+// ═══════════════════════════════════════════
+//  TOAST / ÉVÉNEMENTS
+// ═══════════════════════════════════════════
+function toast(msg) {
+  const container = document.getElementById('event-overlay');
+  const el = document.createElement('div');
+  el.className = 'event-toast';
+  el.innerHTML = msg;
+  container.appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+// ═══════════════════════════════════════════
+//  MÉTÉO & SAISONS
+// ═══════════════════════════════════════════
+function updateSeasonUI() {
+  const s = SEASONS[gameState.season];
+  const w = s.weathers[gameState.weatherIdx];
+
+  document.getElementById('season-icon').textContent = s.icon;
+  document.getElementById('season-name').textContent = s.name;
+  document.getElementById('weather-desc').textContent = w.desc;
+  document.getElementById('day-num').textContent = gameState.dayInSeason;
+
+  const pct = (gameState.dayInSeason / 49) * 100;
+  document.getElementById('cycle-fill').style.width = pct + '%';
+  document.getElementById('cycle-fill').style.background = s.cycleColor;
+
+  // Ciel
+  document.getElementById('sky').style.background = s.skyGrad;
+
+  // Overlay météo
+  applyWeatherOverlay(w.type);
+}
+
+function applyWeatherOverlay(type) {
+  const overlay = document.getElementById('weather-overlay');
+  overlay.innerHTML = '';
+
+  if(type === 'snow' || type === 'blizzard') {
+    const count = type === 'blizzard' ? 60 : 25;
+    for(let i=0; i<count; i++) {
+      const flake = document.createElement('div');
+      flake.className = 'snowflake';
+      flake.style.left = Math.random()*100 + 'vw';
+      flake.style.animationDuration = (2+Math.random()*4) + 's';
+      flake.style.animationDelay = (Math.random()*4) + 's';
+      flake.style.fontSize = (0.5+Math.random()*1) + 'rem';
+      flake.textContent = '❄';
+      overlay.appendChild(flake);
+    }
+  }
+
+  if(type === 'rain' || type === 'storm') {
+    for(let i=0; i<40; i++) {
+      const drop = document.createElement('div');
+      drop.className = 'raindrop';
+      drop.style.left = Math.random()*100 + 'vw';
+      drop.style.height = (15+Math.random()*20) + 'px';
+      drop.style.animationDuration = (0.4+Math.random()*0.3) + 's';
+      drop.style.animationDelay = (Math.random()*2) + 's';
+      overlay.appendChild(drop);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════
+//  MINIMAP
+// ═══════════════════════════════════════════
+const MINIMAP_COLORS = {
+  fog:      '#0d0a05',
+  plains:   '#4a6a28',
+  forest:   '#1e3510',
+  mountain: '#4a3a2a',
+  water:    '#1a4a6a',
+  tundra:   '#6a94a8',
+  swamp:    '#2a3a10',
+  ruins:    '#3a2a1a',
+  village_ally:  '#64c850',
+  village_enemy: '#c83228',
+};
+
+function renderMinimap() {
+  const canvas = document.getElementById('minimap-canvas');
+  const ctx = canvas.getContext('2d');
+  const cw = 120 / GRID_SIZE;
+
+  gameState.cells.forEach(cell => {
+    const x = cell.col * cw;
+    const y = cell.row * cw;
+    ctx.fillStyle = cell.explored ? (MINIMAP_COLORS[cell.type] || '#4a6a28') : '#0d0a05';
+    ctx.fillRect(x, y, cw, cw);
+  });
+
+  // Viewport indicator
+  ctx.strokeStyle = 'rgba(212,160,23,0.6)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(0, 0, 120, 120);
+}
+
+// ═══════════════════════════════════════════
+//  ZOOM & PAN
+// ═══════════════════════════════════════════
+let scale = 0.85, panX = 0, panY = 0;
+let isDragging = false, dragStartX = 0, dragStartY = 0, panStartX = 0, panStartY = 0;
+
+function applyTransform() {
+  document.getElementById('map-wrap').style.transform = `translate(${panX}px,${panY}px) scale(${scale})`;
+}
+
+function centerOnVillage() {
+  const container = document.getElementById('map-container');
+  const cw = container.clientWidth;
+  const ch = container.clientHeight;
+  const villageX = (8 * 66 + 20) * scale;
+  const villageY = (8 * 66 + 20) * scale;
+  panX = cw/2 - villageX;
+  panY = ch/2 - villageY;
+  applyTransform();
+}
+
+function zoomIn()    { scale = Math.min(scale * 1.2, 2);   applyTransform(); }
+function zoomOut()   { scale = Math.max(scale * 0.8, 0.4); applyTransform(); }
+function resetView() { scale = 0.85; centerOnVillage(); }
+
+// Drag
+document.getElementById('map-container').addEventListener('mousedown', e => {
+  if(e.button !== 0) return;
+  isDragging = true;
+  dragStartX = e.clientX; dragStartY = e.clientY;
+  panStartX  = panX;      panStartY  = panY;
+});
+
+document.addEventListener('mousemove', e => {
+  if(!isDragging) return;
+  panX = panStartX + (e.clientX - dragStartX);
+  panY = panStartY + (e.clientY - dragStartY);
+  applyTransform();
+});
+
+document.addEventListener('mouseup', () => { isDragging = false; });
+
+// Touch
+document.getElementById('map-container').addEventListener('touchstart', e => {
+  const t = e.touches[0];
+  isDragging = true;
+  dragStartX = t.clientX; dragStartY = t.clientY;
+  panStartX  = panX;      panStartY  = panY;
+});
+
+document.addEventListener('touchmove', e => {
+  if(!isDragging) return;
+  const t = e.touches[0];
+  panX = panStartX + (t.clientX - dragStartX);
+  panY = panStartY + (t.clientY - dragStartY);
+  applyTransform();
+});
+
+document.addEventListener('touchend', () => { isDragging = false; });
+
+// Fermer le menu radial en cliquant ailleurs
+document.getElementById('map-container').addEventListener('click', closeRadialMenu);
+
+// Scroll zoom
+document.getElementById('map-container').addEventListener('wheel', e => {
+  e.preventDefault();
+  if(e.deltaY < 0) zoomIn(); else zoomOut();
+}, { passive:false });
+
+// ═══════════════════════════════════════════
+//  RESSOURCES UI
+// ═══════════════════════════════════════════
+function updateResources() {
+  const r = gameState.resources;
+  document.getElementById('r-wood').textContent  = r.wood;
+  document.getElementById('r-stone').textContent = r.stone;
+  document.getElementById('r-food').textContent  = r.food;
+  document.getElementById('r-gold').textContent  = r.gold;
+  document.getElementById('r-runes').textContent = r.runes;
+  document.getElementById('r-souls').textContent = r.souls;
+  document.getElementById('r-mead').textContent  = r.mead;
+}
+
+// ═══════════════════════════════════════════
+//  NUAGES DE FOND
+// ═══════════════════════════════════════════
+function spawnClouds() {
+  const sky = document.getElementById('sky');
+  for(let i=0; i<6; i++) {
+    const cloud = document.createElement('div');
+    cloud.className = 'cloud';
+    cloud.style.width  = (80 + Math.random()*120) + 'px';
+    cloud.style.height = (30 + Math.random()*40)  + 'px';
+    cloud.style.top    = (10 + Math.random()*40)  + '%';
+    cloud.style.background = `rgba(255,255,255,${0.3+Math.random()*0.4})`;
+    cloud.style.animationDuration = (30+Math.random()*50) + 's';
+    cloud.style.animationDelay    = (-Math.random()*60) + 's';
+    sky.appendChild(cloud);
+  }
+}
+
+// ═══════════════════════════════════════════
+//  BOUCLE DE JEU (ticks légers)
+// ═══════════════════════════════════════════
+setInterval(() => {
+  gameState.tick++;
+
+  // Production toutes les 10 ticks
+  if(gameState.tick % 10 === 0) {
+    const r = gameState.resources;
+    const bonus = gameState.season === 0 ? 1.3 : gameState.season === 3 ? 0.5 : 1;
+    r.wood  += Math.floor(6  * bonus);
+    r.stone += Math.floor(4  * bonus);
+    r.food  += Math.floor(8  * bonus);
+    r.gold  += Math.floor(2  * bonus);
+    updateResources();
+  }
+
+  // Avance du temps
+  if(gameState.tick % 30 === 0) {
+    gameState.dayInSeason++;
+    if(gameState.dayInSeason > 49) {
+      gameState.dayInSeason = 1;
+      gameState.season = (gameState.season + 1) % 4;
+      gameState.weatherIdx = Math.floor(Math.random() * 3);
+      const s = SEASONS[gameState.season];
+      toast(`${s.icon} Nouvelle saison : ${s.name} !`);
+      applyWeatherOverlay(s.weathers[gameState.weatherIdx].type);
+    }
+    updateSeasonUI();
+  }
+
+  // Événement météo aléatoire rare
+  if(gameState.tick % 200 === 0) {
+    gameState.weatherIdx = Math.floor(Math.random() * 3);
+    const w = SEASONS[gameState.season].weathers[gameState.weatherIdx];
+    updateSeasonUI();
+    toast(`🌀 Changement météo — ${w.desc}`);
+  }
+
+}, 1000);
+
+// ═══════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════
+gameState.cells = generateMap();
+renderGrid();
+updateSeasonUI();
+updateResources();
+spawnClouds();
+
+// Centrer après rendu
+requestAnimationFrame(() => {
+  setTimeout(centerOnVillage, 50);
+});
+
+// Toast de bienvenue
+setTimeout(() => toast('🪓 Bienvenue à Yggdrasil — Votre destin commence ici.'), 500);
+setTimeout(() => toast('🔍 Cliquez sur le brouillard pour explorer les terres inconnues.'), 2000);
+</script>
+</body>
+</html>
