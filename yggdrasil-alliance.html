@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YGGDRASIL — Alliance</title>
+<link href="https://fonts.googleapis.com/css2?family=Uncial+Antiqua&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#0e0a04;--parch:#d4b896;--parch-dim:#8a7055;--parch-light:#f0dfc0;--gold:#c8960c;--gold-light:#f0c040;--gold-glow:rgba(200,150,12,.5);--blood:#8b1a1a;--blood-bright:#e74c3c;--moss:#4a7a35;--moss-light:#6aaa50;--purple:#8e44ad;--frost:#4a9abb;--border:rgba(200,150,12,.22);--panel:rgba(14,10,4,.95)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'IM Fell English',Georgia,serif;background:var(--ink);color:var(--parch);overflow:hidden}
+#bg{position:fixed;inset:0;z-index:0;background:radial-gradient(ellipse at 20% 80%,rgba(74,122,53,.06),transparent 55%),radial-gradient(ellipse at 80% 20%,rgba(200,150,12,.04),transparent 55%),#0e0a04}
+.bg-rune{position:absolute;font-size:8rem;opacity:.016;color:var(--gold);animation:rf 20s ease-in-out infinite;pointer-events:none}
+@keyframes rf{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-12px) rotate(3deg)}}
+
+/* TOPBAR */
+#topbar{position:relative;z-index:100;background:rgba(8,5,1,.97);border-bottom:1px solid var(--border);padding:.38rem .9rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;box-shadow:0 2px 20px rgba(0,0,0,.8)}
+.logo{font-family:'Uncial Antiqua',serif;font-size:1.12rem;color:var(--gold);letter-spacing:3px;text-shadow:0 0 15px var(--gold-glow);text-decoration:none;flex-shrink:0}
+.logo span{font-size:.5rem;display:block;color:var(--parch-dim);letter-spacing:3px}
+.sep{width:1px;height:24px;background:var(--border);flex-shrink:0}
+.res{display:flex;align-items:center;gap:.2rem;background:rgba(200,150,12,.06);border:1px solid var(--border);border-radius:3px;padding:.15rem .4rem;font-size:.76rem}
+.res .v{color:var(--parch-light);font-weight:600;min-width:22px}
+.res.rare .v{color:var(--gold-light)}
+.nav-links{margin-left:auto;display:flex;gap:.4rem}
+.nav-link{font-family:'Uncial Antiqua',serif;font-size:.65rem;letter-spacing:1px;color:var(--parch-dim);text-decoration:none;padding:.25rem .6rem;border:1px solid var(--border);border-radius:3px;transition:all .2s}
+.nav-link:hover,.nav-link.active{color:var(--gold);border-color:rgba(200,150,12,.5);background:rgba(200,150,12,.07)}
+
+/* LAYOUT */
+#main{position:relative;z-index:10;display:flex;height:calc(100vh - 44px);overflow:hidden}
+
+/* SIDEBAR */
+#sidebar{width:220px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto}
+#sidebar::-webkit-scrollbar{width:3px}#sidebar::-webkit-scrollbar-thumb{background:var(--border)}
+.sb-section{padding:.7rem .8rem;border-bottom:1px solid rgba(200,150,12,.08)}
+.sb-title{font-family:'Uncial Antiqua',serif;font-size:.78rem;color:var(--gold);letter-spacing:2px;margin-bottom:.5rem;display:flex;align-items:center;gap:.35rem}
+.alliance-badge{background:linear-gradient(135deg,rgba(200,150,12,.15),rgba(200,150,12,.05));border:1px solid rgba(200,150,12,.4);border-radius:5px;padding:.6rem .8rem;margin-bottom:.6rem;text-align:center}
+.alliance-name{font-family:'Uncial Antiqua',serif;font-size:1rem;color:var(--gold-light);letter-spacing:2px}
+.alliance-code{font-size:.65rem;color:var(--parch-dim);letter-spacing:3px;margin-top:.15rem}
+.alliance-glory{font-size:.8rem;color:var(--gold);margin-top:.3rem}
+.member-row{display:flex;align-items:center;gap:.45rem;padding:.32rem .4rem;border-radius:3px;margin-bottom:.15rem;cursor:pointer;transition:background .15s}
+.member-row:hover{background:rgba(200,150,12,.06)}
+.member-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.9rem;border:2px solid var(--border);flex-shrink:0}
+.member-avatar.online{border-color:var(--moss-light);box-shadow:0 0 6px rgba(106,170,80,.4)}
+.member-avatar.offline{opacity:.5}
+.member-info{flex:1;min-width:0}
+.member-name{font-size:.76rem;color:var(--parch-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.member-role{font-size:.62rem;color:var(--parch-dim)}
+.member-online{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.member-online.on{background:var(--moss-light);box-shadow:0 0 4px var(--moss-light)}
+.member-online.off{background:var(--parch-dim)}
+
+/* MAIN CONTENT */
+#content{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.tabs{display:flex;background:rgba(8,5,1,.9);border-bottom:1px solid var(--border)}
+.tab{padding:.48rem 1.1rem;font-family:'Uncial Antiqua',serif;font-size:.73rem;letter-spacing:1.5px;color:var(--parch-dim);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
+.tab:hover{color:var(--parch)}.tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.tab-content{flex:1;overflow-y:auto;padding:1rem 1.2rem}
+.tab-content::-webkit-scrollbar{width:4px}.tab-content::-webkit-scrollbar-thumb{background:var(--border)}
+.pane{display:none}.pane.active{display:block}
+.sec-t{font-size:.6rem;letter-spacing:2px;text-transform:uppercase;color:var(--parch-dim);margin-bottom:.6rem;padding-bottom:.3rem;border-bottom:1px solid rgba(200,150,12,.1)}
+
+/* LOBBY (pas encore d'alliance) */
+.lobby-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:1.8rem;padding:2rem}
+.lobby-title{font-family:'Uncial Antiqua',serif;font-size:1.8rem;color:var(--gold);letter-spacing:4px;text-shadow:0 0 20px var(--gold-glow);text-align:center}
+.lobby-sub{font-size:.88rem;color:var(--parch-dim);font-style:italic;text-align:center;max-width:400px}
+.lobby-cards{display:flex;gap:1.2rem;flex-wrap:wrap;justify-content:center}
+.lobby-card{background:rgba(14,10,4,.95);border:1px solid var(--border);border-radius:8px;padding:1.5rem;width:200px;text-align:center;cursor:pointer;transition:all .25s;position:relative;overflow:hidden}
+.lobby-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:0;transition:opacity .2s}
+.lobby-card:hover{border-color:var(--gold);transform:translateY(-4px);box-shadow:0 8px 30px rgba(0,0,0,.6)}.lobby-card:hover::before{opacity:1}
+.lobby-card-icon{font-size:2.5rem;margin-bottom:.7rem;filter:drop-shadow(0 2px 8px rgba(0,0,0,.5))}
+.lobby-card-title{font-family:'Uncial Antiqua',serif;font-size:.95rem;color:var(--gold-light);letter-spacing:1px;margin-bottom:.4rem}
+.lobby-card-desc{font-size:.73rem;color:var(--parch-dim);font-style:italic}
+.lobby-form{background:rgba(14,10,4,.9);border:1px solid var(--border);border-radius:6px;padding:1.2rem 1.5rem;width:300px;display:none}
+.lobby-form.active{display:block}
+.form-title{font-family:'Uncial Antiqua',serif;font-size:.95rem;color:var(--gold-light);margin-bottom:.9rem;text-align:center}
+.form-field{margin-bottom:.7rem}
+.form-label{font-size:.7rem;color:var(--parch-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:.25rem;display:block}
+.form-input{width:100%;background:rgba(0,0,0,.5);border:1px solid var(--border);color:var(--parch);padding:.45rem .6rem;font-family:'IM Fell English',serif;font-size:.92rem;border-radius:3px;outline:none;transition:border-color .2s}
+.form-input:focus{border-color:var(--gold)}
+.btn-action{width:100%;padding:.5rem;font-family:'Uncial Antiqua',serif;font-size:.8rem;letter-spacing:2px;border-radius:3px;cursor:pointer;transition:all .2s;margin-top:.3rem}
+.btn-gold{background:linear-gradient(135deg,rgba(200,150,12,.2),rgba(200,150,12,.08));border:1px solid rgba(200,150,12,.6);color:var(--gold)}
+.btn-gold:hover{background:rgba(200,150,12,.25);box-shadow:0 0 12px var(--gold-glow)}
+.btn-moss{background:rgba(74,122,53,.15);border:1px solid rgba(106,170,80,.5);color:var(--moss-light)}
+.btn-moss:hover{background:rgba(74,122,53,.25)}
+.btn-sm{width:auto;padding:.3rem .8rem;font-size:.7rem;letter-spacing:1px}
+.btn-cancel{background:rgba(0,0,0,.3);border:1px solid var(--border);color:var(--parch-dim);margin-top:.3rem}
+.btn-cancel:hover{border-color:var(--parch-dim);color:var(--parch)}
+.code-display{background:rgba(0,0,0,.5);border:1px solid rgba(200,150,12,.4);border-radius:4px;padding:.5rem 1rem;text-align:center;font-family:'Uncial Antiqua',serif;font-size:1.4rem;letter-spacing:6px;color:var(--gold-light);cursor:pointer;margin:.5rem 0}
+.code-hint{font-size:.68rem;color:var(--parch-dim);text-align:center;font-style:italic}
+
+/* PÉON */
+.peon-layout{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.2rem}
+.peon-card{background:rgba(14,10,4,.9);border:1px solid var(--border);border-radius:5px;padding:.9rem}
+.peon-title{font-family:'Uncial Antiqua',serif;font-size:.88rem;color:var(--gold-light);margin-bottom:.7rem;display:flex;align-items:center;gap:.4rem}
+.peon-status{display:flex;align-items:center;gap:.5rem;font-size:.8rem;margin-bottom:.5rem;padding:.4rem .6rem;border-radius:3px;background:rgba(0,0,0,.3)}
+.peon-status.traveling{color:var(--gold)}
+.peon-status.idle{color:var(--moss-light)}
+.peon-status.blocked{color:var(--blood-bright)}
+.res-select{width:100%;background:rgba(0,0,0,.5);border:1px solid var(--border);color:var(--parch);padding:.42rem .5rem;font-family:'IM Fell English',serif;font-size:.86rem;border-radius:3px;outline:none;margin-bottom:.5rem}
+.res-select:focus{border-color:var(--gold)}
+.peon-route{display:flex;align-items:center;gap:.4rem;font-size:.78rem;color:var(--parch-dim);padding:.35rem 0;border-top:1px solid rgba(200,150,12,.08);margin-top:.5rem}
+.route-arrow{color:var(--gold);font-size:.9rem}
+.send-row{display:flex;gap:.4rem;align-items:center}
+.send-qty{width:65px;background:rgba(0,0,0,.5);border:1px solid var(--border);color:var(--parch);padding:.3rem .4rem;font-family:'IM Fell English',serif;font-size:.9rem;border-radius:3px;text-align:center;outline:none}
+.send-qty:focus{border-color:var(--gold)}
+.peon-history{max-height:120px;overflow-y:auto;margin-top:.6rem}
+.peon-history::-webkit-scrollbar{width:3px}.peon-history::-webkit-scrollbar-thumb{background:var(--border)}
+.peon-log-line{font-size:.72rem;padding:.2rem 0;border-bottom:1px solid rgba(200,150,12,.05);color:var(--parch-dim)}
+.peon-log-line.send{color:var(--gold)}.peon-log-line.recv{color:var(--moss-light)}
+
+/* RÉSERVE COMMUNE */
+.reserve-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:.7rem;margin-bottom:1rem}
+.reserve-slot{background:rgba(14,10,4,.9);border:1px solid var(--border);border-radius:4px;padding:.7rem;text-align:center;position:relative}
+.reserve-slot.locked{opacity:.4}
+.reserve-icon{font-size:1.6rem;margin-bottom:.3rem}
+.reserve-name{font-size:.7rem;color:var(--parch-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:.25rem}
+.reserve-val{font-size:1.1rem;font-weight:600;color:var(--parch-light)}
+.reserve-val.locked-val{font-size:.72rem;color:var(--parch-dim);font-style:italic}
+.reserve-actions{display:flex;gap:.3rem;margin-top:.4rem}
+.r-btn{flex:1;padding:.28rem .2rem;font-family:'Uncial Antiqua',serif;font-size:.6rem;letter-spacing:.5px;border-radius:3px;cursor:pointer;transition:all .2s}
+.r-btn-dep{background:rgba(200,150,12,.1);border:1px solid rgba(200,150,12,.3);color:var(--gold)}
+.r-btn-dep:hover{background:rgba(200,150,12,.2)}
+.r-btn-wit{background:rgba(139,26,26,.1);border:1px solid rgba(139,26,26,.4);color:var(--blood-bright)}
+.r-btn-wit:hover{background:rgba(139,26,26,.2)}
+.reserve-unlock-info{background:rgba(200,150,12,.05);border:1px solid rgba(200,150,12,.15);border-radius:5px;padding:.8rem 1rem;font-size:.8rem;color:var(--parch-dim);font-style:italic;margin-bottom:1rem}
+
+/* MONUMENTS */
+.monuments-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;margin-bottom:1rem}
+.monument-card{background:rgba(14,10,4,.92);border:1px solid var(--border);border-radius:6px;padding:1rem;position:relative;overflow:hidden;transition:border-color .2s}
+.monument-card.built{border-color:var(--moss-light)}
+.monument-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:0;transition:.2s}
+.monument-card.built::before{opacity:1;background:linear-gradient(90deg,transparent,var(--moss-light),transparent)}
+.mon-header{display:flex;align-items:center;gap:.6rem;margin-bottom:.6rem}
+.mon-icon{font-size:2rem;filter:drop-shadow(0 2px 8px rgba(0,0,0,.6))}
+.mon-name{font-family:'Uncial Antiqua',serif;font-size:.95rem;color:var(--gold-light);letter-spacing:1px}
+.mon-status{font-size:.65rem;margin-top:.1rem}
+.mon-status.built{color:var(--moss-light)}.mon-status.building{color:var(--gold)}.mon-status.available{color:var(--parch-dim)}
+.mon-desc{font-size:.78rem;color:var(--parch-dim);font-style:italic;line-height:1.6;margin-bottom:.7rem}
+.mon-bonus{background:rgba(200,150,12,.06);border:1px solid rgba(200,150,12,.15);border-radius:3px;padding:.35rem .6rem;font-size:.75rem;color:var(--gold-light);margin-bottom:.7rem}
+.mon-cost{display:flex;gap:.3rem;flex-wrap:wrap;margin-bottom:.6rem}
+.mon-cost-chip{font-size:.7rem;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:3px;padding:.15rem .4rem}
+.mon-build-bar{background:rgba(0,0,0,.4);border-radius:3px;height:6px;overflow:hidden;margin-bottom:.5rem}
+.mon-build-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--gold),var(--gold-light));transition:width .5s}
+
+/* CHAT */
+.chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 120px);max-height:600px}
+.chat-messages{flex:1;overflow-y:auto;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:5px;padding:.7rem;margin-bottom:.7rem}
+.chat-messages::-webkit-scrollbar{width:3px}.chat-messages::-webkit-scrollbar-thumb{background:var(--border)}
+.chat-msg{margin-bottom:.6rem;line-height:1.5}
+.chat-author{font-family:'Uncial Antiqua',serif;font-size:.76rem;margin-right:.35rem}
+.chat-author.self{color:var(--gold-light)}.chat-author.ally{color:var(--moss-light)}.chat-author.system{color:var(--purple)}
+.chat-text{font-size:.8rem;color:var(--parch)}
+.chat-time{font-size:.62rem;color:var(--parch-dim);margin-left:.3rem}
+.chat-input-row{display:flex;gap:.5rem}
+.chat-input{flex:1;background:rgba(0,0,0,.5);border:1px solid var(--border);color:var(--parch);padding:.45rem .7rem;font-family:'IM Fell English',serif;font-size:.9rem;border-radius:3px;outline:none}
+.chat-input:focus{border-color:var(--gold)}
+.chat-send{padding:.45rem 1rem;font-family:'Uncial Antiqua',serif;font-size:.72rem;letter-spacing:1px;background:rgba(200,150,12,.12);border:1px solid rgba(200,150,12,.4);color:var(--gold);cursor:pointer;border-radius:3px;transition:all .2s}
+.chat-send:hover{background:rgba(200,150,12,.22)}
+
+/* PROGRESSION ALLIANCE */
+.glory-display{background:linear-gradient(135deg,rgba(200,150,12,.08),rgba(200,150,12,.03));border:1px solid rgba(200,150,12,.3);border-radius:6px;padding:1rem 1.2rem;margin-bottom:1rem;text-align:center}
+.glory-val{font-family:'Uncial Antiqua',serif;font-size:2.2rem;color:var(--gold-light);text-shadow:0 0 20px var(--gold-glow)}
+.glory-label{font-size:.68rem;color:var(--parch-dim);letter-spacing:2px;text-transform:uppercase}
+.alliance-xp-bg{background:rgba(0,0,0,.4);border-radius:4px;height:10px;overflow:hidden;margin:.5rem 0}
+.alliance-xp-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-light));border-radius:4px;transition:width .8s}
+.yggdrasil-tree{text-align:center;font-size:4rem;margin:1rem 0;filter:drop-shadow(0 0 15px rgba(74,122,53,.4));animation:treeGlow 4s ease-in-out infinite}
+@keyframes treeGlow{0%,100%{filter:drop-shadow(0 0 10px rgba(74,122,53,.3))}50%{filter:drop-shadow(0 0 25px rgba(74,122,53,.6))}}
+.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.7rem;margin-bottom:1rem}
+.stat-card{background:rgba(14,10,4,.9);border:1px solid var(--border);border-radius:4px;padding:.7rem;text-align:center}
+.stat-label{font-size:.62rem;color:var(--parch-dim);text-transform:uppercase;letter-spacing:1px}
+.stat-val{font-size:1.1rem;color:var(--parch-light);font-weight:600;margin-top:.15rem}
+
+/* TOAST */
+#toasts{position:fixed;bottom:1.2rem;right:1.2rem;z-index:9999;display:flex;flex-direction:column;gap:.4rem;pointer-events:none}
+.toast{background:rgba(8,5,1,.97);border:1px solid var(--gold);border-radius:3px;padding:.45rem .9rem;font-size:.82rem;color:var(--parch-light);box-shadow:0 4px 20px rgba(0,0,0,.7);animation:tIn .3s cubic-bezier(.34,1.56,.64,1),tOut .3s ease 3.5s forwards;max-width:280px}
+.toast.s{border-color:var(--moss-light)}.toast.d{border-color:var(--blood-bright)}.toast.info{border-color:var(--frost)}
+@keyframes tIn{from{opacity:0;transform:translateX(30px)}}
+@keyframes tOut{to{opacity:0;transform:translateX(30px)}}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:rgba(10,6,2,.98);border:1px solid var(--gold);border-radius:8px;padding:1.5rem 2rem;min-width:280px;max-width:400px;box-shadow:0 0 40px var(--gold-glow)}
+.modal-title{font-family:'Uncial Antiqua',serif;font-size:1.1rem;color:var(--gold-light);letter-spacing:2px;margin-bottom:1rem;text-align:center}
+.modal-body{font-size:.85rem;color:var(--parch-dim);line-height:1.7;margin-bottom:1.2rem;text-align:center}
+.modal-btns{display:flex;gap:.6rem}
+
+@media(max-width:700px){#sidebar{display:none}.peon-layout{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="bg"><div class="bg-rune" style="top:5%;left:3%">ᚠ</div><div class="bg-rune" style="top:60%;left:85%;animation-delay:-10s">ᚢ</div></div>
+
+<div id="topbar">
+  <a class="logo" href="yggdrasil-carte.html">YGGDRASIL<span>⁂ alliance ⁂</span></a>
+  <div class="sep"></div>
+  <div style="display:flex;gap:.3rem;flex-wrap:wrap">
+    <div class="res"><span>🪵</span><span class="v" id="r-wood">480</span></div>
+    <div class="res"><span>🪨</span><span class="v" id="r-stone">320</span></div>
+    <div class="res"><span>🌾</span><span class="v" id="r-food">610</span></div>
+    <div class="res"><span>🪙</span><span class="v" id="r-gold">145</span></div>
+    <div class="res rare"><span>ᚱ</span><span class="v" id="r-runes">12</span></div>
+    <div class="res rare"><span>🍺</span><span class="v" id="r-mead">28</span></div>
+  </div>
+  <div class="nav-links">
+    <a class="nav-link" href="yggdrasil-carte.html">🗺 Carte</a>
+    <a class="nav-link" href="yggdrasil-village.html">🏘 Village</a>
+    <a class="nav-link" href="yggdrasil-armee.html">⚔ Armée</a>
+    <a class="nav-link active" href="#">🤝 Alliance</a>
+  </div>
+</div>
+
+<div id="main">
+
+  <!-- SIDEBAR -->
+  <div id="sidebar" id="sidebar-panel">
+    <div class="sb-section">
+      <div id="sidebar-alliance-info"></div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-title">👥 Membres</div>
+      <div id="members-list"></div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-title">📊 Statistiques</div>
+      <div id="sidebar-stats"></div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div id="content">
+    <!-- LOBBY (pas d'alliance) -->
+    <div id="lobby-view" style="flex:1;overflow:hidden;display:flex;flex-direction:column"></div>
+
+    <!-- VUE ALLIANCE (une fois connecté) -->
+    <div id="alliance-view" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+      <div class="tabs">
+        <div class="tab active" onclick="aTab('overview',this)">🌳 Vue d'ensemble</div>
+        <div class="tab" onclick="aTab('peon',this)">🧑‍🌾 Péon</div>
+        <div class="tab" onclick="aTab('reserve',this)">📦 Réserve</div>
+        <div class="tab" onclick="aTab('monuments',this)">🗿 Monuments</div>
+        <div class="tab" onclick="aTab('chat',this)">💬 Chat</div>
+      </div>
+      <div class="tab-content">
+        <div class="pane active" id="pane-overview"></div>
+        <div class="pane" id="pane-peon"></div>
+        <div class="pane" id="pane-reserve"></div>
+        <div class="pane" id="pane-monuments"></div>
+        <div class="pane" id="pane-chat"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMATION -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Confirmation</div>
+    <div class="modal-body" id="modal-body">Êtes-vous sûr ?</div>
+    <div class="modal-btns">
+      <button class="btn-action btn-cancel" style="flex:1" onclick="closeModal()">Annuler</button>
+      <button class="btn-action btn-gold" style="flex:1" id="modal-confirm" onclick="">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+const RES_ICONS={food:'🌾',wood:'🪵',stone:'🪨',gold:'🪙',runes:'ᚱ',souls:'☠',mead:'🍺'};
+
+const state={
+  player:{name:'Ragnar Lothbrok',role:'jarl',glory:1240,resources:{wood:480,stone:320,food:610,gold:145,runes:12,souls:3,mead:28}},
+  alliance:null,tick:0
+};
+
+const MONUMENTS_DEF=[
+  {id:'runestone',name:'Runestone de l\'Alliance',icon:'🪨',
+   desc:'Une pierre gravée de runes runiques par votre Chaman, symbole d\'unité entre vos clans.',
+   bonus:'+15% production pour tous les membres',
+   cost:{wood:300,stone:500,runes:5},buildTime:120,
+   effect:'production+15'},
+  {id:'drakkar',name:'Grand Drakkar',icon:'🚢',
+   desc:'Un drakkar de guerre construit par votre Forgeron, capable de transporter des armées entières.',
+   bonus:'+30% capacité d\'armée, déblocage commerce maritime',
+   cost:{wood:800,stone:200,gold:150},buildTime:200,
+   effect:'army+30'},
+  {id:'mead_hall',name:'Grande Salle de l\'Hydromel',icon:'🍺',
+   desc:'Une salle de festin commune qui renforce le moral et la camaraderie entre vos guerriers.',
+   bonus:'Moral minimum garanti à 40%, +5 Gloire/victoire',
+   cost:{wood:400,food:300,mead:20},buildTime:90,
+   effect:'moral+40'},
+  {id:'allfather_shrine',name:'Sanctuaire d\'Odin',icon:'🦅',
+   desc:'Un sanctuaire dédié au Père de Tous, bénissant vos récoltes et vos batailles.',
+   bonus:'+20% XP héros, sorts runiques amplifiés',
+   cost:{wood:200,stone:300,runes:10,souls:2},buildTime:150,
+   effect:'xp+20'},
+];
+
+const DEMO_MEMBERS=[
+  {name:'Ragnar Lothbrok',role:'Jarl',roleIcon:'🪓',online:true,glory:1240,self:true},
+  {name:'Sigrid la Chaman',role:'Chaman',roleIcon:'🔮',online:true,glory:890,self:false},
+  {name:'Bjorn le Skald',role:'Skald',roleIcon:'🎵',online:false,glory:650,self:false},
+];
+
+const CHAT_DEMO=[
+  {author:'Système',cls:'system',text:'Alliance "Fils de Yggdrasil" fondée.',time:'08:12'},
+  {author:'Sigrid la Chaman',cls:'ally',text:'J\'ai reçu votre envoi de bois, merci ! J\'attaque les Draugr ce soir.',time:'09:45'},
+  {author:'Bjorn le Skald',cls:'ally',text:'La Runestone est presque terminée, encore 2 jours de construction.',time:'11:20'},
+  {author:'Système',cls:'system',text:'Vague de Draugr repoussée ! +80 Gloire pour l\'alliance.',time:'14:33'},
+];
+
+// ── INIT ──
+function init(){
+  renderLobby();updateRes();
+  // Simuler une alliance déjà existante après 800ms pour la démo
+  setTimeout(()=>{
+    // Décommente pour tester le lobby pur:
+    // return;
+    joinAllianceDemo();
+  },800);
+}
+
+// ── LOBBY ──
+function renderLobby(){
+  const lv=document.getElementById('lobby-view');
+  lv.innerHTML=`
+    <div class="lobby-wrap">
+      <div style="font-size:4rem;filter:drop-shadow(0 0 20px rgba(200,150,12,.4))">🌳</div>
+      <div class="lobby-title">ALLIANCE</div>
+      <div class="lobby-sub">Unissez vos forces avec un autre Jarl. Partagez ressources, construisez des monuments et affrontez ensemble les menaces de Midgard.</div>
+      <div class="lobby-cards">
+        <div class="lobby-card" onclick="showForm('create')">
+          <div class="lobby-card-icon">⚔</div>
+          <div class="lobby-card-title">Fonder</div>
+          <div class="lobby-card-desc">Créez une nouvelle alliance et partagez le code avec votre allié</div>
+        </div>
+        <div class="lobby-card" onclick="showForm('join')">
+          <div class="lobby-card-icon">🤝</div>
+          <div class="lobby-card-title">Rejoindre</div>
+          <div class="lobby-card-desc">Entrez le code d'alliance de votre partenaire pour vous connecter</div>
+        </div>
+      </div>
+      <div class="lobby-form" id="form-create">
+        <div class="form-title">⚔ Fonder une Alliance</div>
+        <div class="form-field">
+          <label class="form-label">Nom de l'alliance</label>
+          <input class="form-input" id="ally-name-input" placeholder="Ex: Fils de Yggdrasil" maxlength="30">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Votre nom de Jarl</label>
+          <input class="form-input" id="jarl-name-input" value="${state.player.name}" maxlength="20">
+        </div>
+        <button class="btn-action btn-gold" onclick="createAlliance()">✦ Fonder l'Alliance</button>
+        <button class="btn-action btn-cancel" onclick="hideForm()">Annuler</button>
+      </div>
+      <div class="lobby-form" id="form-join">
+        <div class="form-title">🤝 Rejoindre une Alliance</div>
+        <div class="form-field">
+          <label class="form-label">Code d'alliance (6 lettres)</label>
+          <input class="form-input" id="join-code-input" placeholder="Ex: RAGNAR" maxlength="6" style="text-transform:uppercase;letter-spacing:4px;font-size:1.2rem;text-align:center">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Votre nom de Jarl</label>
+          <input class="form-input" id="join-name-input" value="${state.player.name}" maxlength="20">
+        </div>
+        <button class="btn-action btn-moss" onclick="joinAlliance()">🤝 Rejoindre</button>
+        <button class="btn-action btn-cancel" onclick="hideForm()">Annuler</button>
+      </div>
+    </div>`;
+}
+
+function showForm(type){
+  document.getElementById('form-create').classList.remove('active');
+  document.getElementById('form-join').classList.remove('active');
+  document.getElementById('form-'+type).classList.add('active');
+}
+function hideForm(){
+  document.getElementById('form-create')?.classList.remove('active');
+  document.getElementById('form-join')?.classList.remove('active');
+}
+
+function genCode(){
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({length:6},()=>chars[Math.floor(Math.random()*chars.length)]).join('');
+}
+
+function createAlliance(){
+  const name=document.getElementById('ally-name-input')?.value.trim();
+  const jarl=document.getElementById('jarl-name-input')?.value.trim();
+  if(!name){toast('❌ Entrez un nom d\'alliance','d');return}
+  const code=genCode();
+  state.alliance={
+    name,code,founded:new Date().toLocaleDateString('fr-FR'),
+    glory:state.player.glory,totalGlory:state.player.glory+890+650,
+    members:[...DEMO_MEMBERS],
+    reserve:{wood:0,stone:0,food:0,gold:0},
+    reserveUnlocked:false,
+    monuments:MONUMENTS_DEF.map(m=>({...m,built:false,building:false,progress:0})),
+    chat:[...CHAT_DEMO],
+    peonLog:[],
+    peonBusy:false,peonTarget:null,peonTicksLeft:0,peonTotal:0,
+  };
+  state.player.name=jarl||state.player.name;
+  toast(`✦ Alliance "${name}" fondée ! Code : ${code}`,'s');
+  showAllianceCreated(code,name);
+}
+
+function showAllianceCreated(code,name){
+  const lv=document.getElementById('lobby-view');
+  lv.innerHTML=`
+    <div class="lobby-wrap">
+      <div style="font-size:3.5rem;filter:drop-shadow(0 0 20px rgba(200,150,12,.4))">⚔</div>
+      <div class="lobby-title" style="font-size:1.4rem">${name}</div>
+      <div class="lobby-sub">Alliance fondée ! Partagez ce code avec votre allié :</div>
+      <div class="code-display" onclick="copyCode('${code}')">${code}</div>
+      <div class="code-hint">Cliquez pour copier · Votre allié doit entrer ce code</div>
+      <button class="btn-action btn-moss" style="width:220px;margin-top:.8rem" onclick="enterAlliance()">🌳 Entrer dans l'Alliance</button>
+    </div>`;
+}
+
+function copyCode(code){
+  navigator.clipboard?.writeText(code).catch(()=>{});
+  toast('📋 Code copié : '+code,'info');
+}
+
+function joinAlliance(){
+  const code=document.getElementById('join-code-input')?.value.trim().toUpperCase();
+  const jarl=document.getElementById('join-name-input')?.value.trim();
+  if(code.length!==6){toast('❌ Code invalide (6 caractères)','d');return}
+  state.alliance={
+    name:'Alliance de '+code,code,founded:new Date().toLocaleDateString('fr-FR'),
+    glory:state.player.glory,totalGlory:state.player.glory+1240,
+    members:[...DEMO_MEMBERS],
+    reserve:{wood:0,stone:0,food:0,gold:0},
+    reserveUnlocked:false,
+    monuments:MONUMENTS_DEF.map(m=>({...m,built:false,building:false,progress:0})),
+    chat:[...CHAT_DEMO],
+    peonLog:[],peonBusy:false,peonTarget:null,peonTicksLeft:0,peonTotal:0,
+  };
+  state.player.name=jarl||state.player.name;
+  toast(`🤝 Vous avez rejoint l'alliance "${state.alliance.name}" !`,'s');
+  enterAlliance();
+}
+
+function joinAllianceDemo(){
+  state.alliance={
+    name:'Fils de Yggdrasil',code:'YGGDRS',founded:'01/02/2025',
+    glory:1240,totalGlory:2780,
+    members:[...DEMO_MEMBERS],
+    reserve:{wood:200,stone:150,food:0,gold:50},
+    reserveUnlocked:true,
+    monuments:MONUMENTS_DEF.map((m,i)=>({...m,built:i===0,building:i===1,progress:i===1?65:0})),
+    chat:[...CHAT_DEMO],
+    peonLog:[
+      {text:'Envoi de 120🪵 à Sigrid — arrivé',cls:'send',t:'Hier 18:42'},
+      {text:'Reçu 80🌾 de Sigrid',cls:'recv',t:'Hier 21:15'},
+    ],
+    peonBusy:false,peonTarget:'Sigrid la Chaman',peonTicksLeft:0,peonTotal:60,
+  };
+  enterAlliance();
+}
+
+function enterAlliance(){
+  document.getElementById('lobby-view').style.display='none';
+  const av=document.getElementById('alliance-view');
+  av.style.display='flex';
+  renderSidebar();renderOverview();renderPeon();renderReserve();renderMonuments();renderChat();
+  startMonumentTimers();
+}
+
+// ── NAVIGATION ONGLETS ──
+function aTab(tab,el){
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
+  document.getElementById('pane-'+tab).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  if(tab==='chat')scrollChat();
+}
+
+// ── SIDEBAR ──
+function renderSidebar(){
+  const al=state.alliance;if(!al)return;
+  document.getElementById('sidebar-alliance-info').innerHTML=`
+    <div class="alliance-badge">
+      <div style="font-size:1.8rem;margin-bottom:.3rem">🌳</div>
+      <div class="alliance-name">${al.name}</div>
+      <div class="alliance-code">Code : ${al.code}</div>
+      <div class="alliance-glory">⭐ ${al.totalGlory} Gloire</div>
+    </div>`;
+  const ml=document.getElementById('members-list');
+  ml.innerHTML=al.members.map(m=>`
+    <div class="member-row">
+      <div class="member-avatar ${m.online?'online':'offline'}">${m.roleIcon}</div>
+      <div class="member-info">
+        <div class="member-name">${m.name}${m.self?' (vous)':''}</div>
+        <div class="member-role">${m.role} · ${m.glory} Gloire</div>
+      </div>
+      <div class="member-online ${m.online?'on':'off'}"></div>
+    </div>`).join('');
+  document.getElementById('sidebar-stats').innerHTML=`
+    <div style="font-size:.76rem;color:var(--parch-dim);line-height:2">
+      <div style="display:flex;justify-content:space-between"><span>Membres :</span><span style="color:var(--parch)">${al.members.length}/2</span></div>
+      <div style="display:flex;justify-content:space-between"><span>Fondée :</span><span style="color:var(--parch)">${al.founded}</span></div>
+      <div style="display:flex;justify-content:space-between"><span>Monuments :</span><span style="color:var(--parch)">${al.monuments.filter(m=>m.built).length}/${al.monuments.length}</span></div>
+    </div>`;
+}
+
+// ── OVERVIEW ──
+function renderOverview(){
+  const al=state.alliance;if(!al)return;
+  const allyXp=al.totalGlory%1000,allyXpMax=1000;
+  const allyLvl=Math.floor(al.totalGlory/1000)+1;
+  document.getElementById('pane-overview').innerHTML=`
+    <div style="display:flex;gap:1.2rem;flex-wrap:wrap">
+      <div style="flex:1;min-width:200px">
+        <div class="glory-display">
+          <div class="glory-label">Gloire de l'Alliance</div>
+          <div class="glory-val">⭐ ${al.totalGlory}</div>
+          <div style="font-size:.72rem;color:var(--parch-dim);margin:.2rem 0">Niveau ${allyLvl} · ${allyXp}/${allyXpMax} XP</div>
+          <div class="alliance-xp-bg"><div class="alliance-xp-fill" style="width:${allyXp/allyXpMax*100}%"></div></div>
+        </div>
+        <div class="stats-grid">
+          ${al.members.map(m=>`<div class="stat-card"><div class="stat-label">${m.roleIcon} ${m.role}</div><div class="stat-val">${m.glory}</div><div style="font-size:.65rem;color:var(--parch-dim)">${m.name}</div></div>`).join('')}
+          <div class="stat-card"><div class="stat-label">🗿 Monuments</div><div class="stat-val">${al.monuments.filter(m=>m.built).length}/${al.monuments.length}</div></div>
+          <div class="stat-card"><div class="stat-label">📦 Réserve</div><div class="stat-val" style="font-size:.85rem">${al.reserveUnlocked?'Active':'Verrouillée'}</div></div>
+        </div>
+      </div>
+      <div style="text-align:center;min-width:150px">
+        <div class="yggdrasil-tree">🌳</div>
+        <div style="font-family:'Uncial Antiqua',serif;color:var(--gold-light);font-size:.85rem;margin-bottom:.3rem">L'Arbre du Monde</div>
+        <div style="font-size:.72rem;color:var(--parch-dim);font-style:italic;max-width:160px;margin:0 auto">Chaque victoire nourrit ses racines. Atteignez le Valhalla ensemble.</div>
+      </div>
+    </div>
+
+    <div class="sec-t" style="margin-top:1rem">Activité récente</div>
+    <div style="background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:4px;padding:.7rem .9rem">
+      ${[
+        {t:'14:33',icon:'⚔',txt:'Sigrid a repoussé une horde de Draugr — +120 Gloire'},
+        {t:'13:10',icon:'🪨',txt:'Construction de la Runestone en cours (65%)'},
+        {t:'11:05',icon:'🌾',txt:'Péon : 80🌾 reçus de Sigrid la Chaman'},
+        {t:'09:00',icon:'🌅',txt:'Nouvelle journée — Ressources produites'},
+      ].map(a=>`<div style="display:flex;align-items:center;gap:.6rem;padding:.3rem 0;border-bottom:1px solid rgba(200,150,12,.06);font-size:.78rem">
+        <span style="color:var(--parch-dim);font-size:.66rem;flex-shrink:0">${a.t}</span>
+        <span>${a.icon}</span><span>${a.txt}</span></div>`).join('')}
+    </div>
+
+    <div style="display:flex;gap:.6rem;margin-top:1rem;flex-wrap:wrap">
+      <button class="btn-action btn-gold btn-sm" onclick="aTab('peon',document.querySelectorAll('.tab')[1])">🧑‍🌾 Envoyer des ressources</button>
+      <button class="btn-action btn-moss btn-sm" onclick="aTab('monuments',document.querySelectorAll('.tab')[3])">🗿 Voir les monuments</button>
+      <button class="btn-action" style="background:rgba(142,68,173,.1);border:1px solid rgba(142,68,173,.4);color:#c070e0;padding:.3rem .8rem;font-family:'Uncial Antiqua',serif;font-size:.7rem;letter-spacing:1px;border-radius:3px;cursor:pointer" onclick="aTab('chat',document.querySelectorAll('.tab')[4])">💬 Chat alliance</button>
+    </div>`;
+}
+
+// ── PÉON ──
+function renderPeon(){
+  const al=state.alliance;if(!al)return;
+  const p=state.player;
+  const resOptions=Object.entries(p.resources).filter(([,v])=>v>0)
+    .map(([r,v])=>`<option value="${r}">${RES_ICONS[r]} ${r.charAt(0).toUpperCase()+r.slice(1)} (${v})</option>`).join('');
+  const ally=al.members.find(m=>!m.self);
+  const peonPct=al.peonBusy?(al.peonTotal-al.peonTicksLeft)/al.peonTotal*100:0;
+  document.getElementById('pane-peon').innerHTML=`
+    <div class="peon-layout">
+      <!-- Envoi -->
+      <div class="peon-card">
+        <div class="peon-title">🧑‍🌾 Envoyer des Ressources</div>
+        <div class="peon-status ${al.peonBusy?'traveling':'idle'}">
+          ${al.peonBusy
+            ?`<span>🚶</span><span>Péon en route vers ${al.peonTarget}… (${al.peonTicksLeft}s)</span>`
+            :`<span>💤</span><span>Péon disponible</span>`}
+        </div>
+        ${al.peonBusy?`
+          <div style="margin:.5rem 0">
+            <div style="display:flex;justify-content:space-between;font-size:.68rem;color:var(--parch-dim);margin-bottom:.2rem"><span>Trajet</span><span>${Math.floor(peonPct)}%</span></div>
+            <div style="background:rgba(0,0,0,.4);border-radius:3px;height:5px;overflow:hidden"><div style="width:${peonPct}%;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-light));border-radius:3px;transition:width .5s" id="peon-bar"></div></div>
+          </div>
+          <button class="btn-action btn-cancel btn-sm" onclick="recallPeon()">↩ Rappeler le péon</button>
+        `:`
+          <div class="form-field" style="margin-top:.5rem">
+            <label class="form-label">Ressource à envoyer</label>
+            <select class="res-select" id="peon-res">${resOptions}</select>
+          </div>
+          <div class="send-row">
+            <input class="send-qty" type="number" id="peon-qty" min="1" value="50" placeholder="Qté">
+            <button class="btn-action btn-gold" style="flex:1;padding:.32rem .5rem;font-size:.72rem" onclick="sendPeon()">🧑‍🌾 Envoyer</button>
+          </div>
+          <div class="peon-route" style="margin-top:.7rem">
+            <span style="font-size:.9rem">🏰</span><span>${p.name}</span>
+            <span class="route-arrow">→→→</span>
+            <span style="font-size:.9rem">🏰</span><span>${ally?.name||'Allié'}</span>
+          </div>
+          <div style="font-size:.68rem;color:var(--parch-dim);font-style:italic;margin-top:.3rem">Sans Marché : 1 péon à la fois, lent. Construisez le Marché pour des échanges en masse.</div>
+        `}
+        <div class="peon-history" id="peon-history-out" style="margin-top:.8rem">
+          <div class="sec-t">Historique envois</div>
+          ${al.peonLog.filter(l=>l.cls==='send').slice(0,5).map(l=>`<div class="peon-log-line send">↑ ${l.text} <span style="float:right;font-size:.62rem">${l.t}</span></div>`).join('')||'<div style="font-size:.73rem;color:var(--parch-dim);font-style:italic">Aucun envoi récent</div>'}
+        </div>
+      </div>
+
+      <!-- Reçu -->
+      <div class="peon-card">
+        <div class="peon-title">📥 Ressources Reçues</div>
+        <div style="background:rgba(74,122,53,.07);border:1px solid rgba(106,170,80,.2);border-radius:4px;padding:.6rem .8rem;margin-bottom:.7rem">
+          <div style="font-size:.72rem;color:var(--parch-dim);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:1px">En attente de réception</div>
+          <div id="pending-recv" style="font-size:.82rem">
+            <div style="color:var(--moss-light)">🌾 +80 Nourriture — arrivée dans 5min</div>
+          </div>
+        </div>
+        <div class="peon-history">
+          <div class="sec-t">Historique reçus</div>
+          ${al.peonLog.filter(l=>l.cls==='recv').slice(0,5).map(l=>`<div class="peon-log-line recv">↓ ${l.text} <span style="float:right;font-size:.62rem">${l.t}</span></div>`).join('')||'<div style="font-size:.73rem;color:var(--parch-dim);font-style:italic">Aucun reçu récent</div>'}
+        </div>
+        <div style="margin-top:.8rem;padding:.6rem;background:rgba(0,0,0,.3);border-radius:4px;font-size:.75rem;color:var(--parch-dim);font-style:italic;line-height:1.6">
+          💡 <strong style="color:var(--parch)">Astuce :</strong> Construisez le <strong style="color:var(--gold)">Marché</strong> dans votre village pour débloquer des échanges rapides et en masse entre alliés.
+        </div>
+      </div>
+    </div>
+
+    <!-- Échanges directs (raccourcis) -->
+    <div class="sec-t">Échanges rapides suggérés</div>
+    <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+      ${[['🪵 100 Bois','wood',100],['🪨 80 Pierre','stone',80],['🌾 120 Nourriture','food',120],['🪙 50 Or','gold',50]].map(([label,res,qty])=>`
+        <button class="btn-action btn-gold btn-sm" onclick="quickSend('${res}',${qty})">${label}</button>`).join('')}
+    </div>`;
+}
+
+function sendPeon(){
+  const al=state.alliance;if(!al)return;
+  const res=document.getElementById('peon-res')?.value;
+  const qty=parseInt(document.getElementById('peon-qty')?.value)||0;
+  if(!res||qty<=0){toast('❌ Quantité invalide','d');return}
+  if((state.player.resources[res]||0)<qty){toast(`❌ Pas assez de ${res}`,'d');return}
+  state.player.resources[res]-=qty;
+  al.peonBusy=true;al.peonTarget=al.members.find(m=>!m.self)?.name||'Allié';
+  al.peonTicksLeft=60;al.peonTotal=60;
+  al.peonLog.unshift({text:`Envoi de ${qty}${RES_ICONS[res]} à ${al.peonTarget}`,cls:'send',t:new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})});
+  updateRes();renderPeon();
+  toast(`🧑‍🌾 Péon envoyé avec ${qty} ${res} !`,'s');
+}
+
+function quickSend(res,qty){
+  if((state.player.resources[res]||0)<qty){toast(`❌ Pas assez de ${res} (tu as ${state.player.resources[res]||0})`,'d');return}
+  document.getElementById('peon-res')&&(document.getElementById('peon-res').value=res);
+  document.getElementById('peon-qty')&&(document.getElementById('peon-qty').value=qty);
+  sendPeon();
+}
+
+function recallPeon(){
+  const al=state.alliance;if(!al)return;
+  al.peonBusy=false;al.peonTicksLeft=0;
+  toast('↩ Péon rappelé — ressources restituées','info');
+  renderPeon();
+}
+
+// ── RÉSERVE ──
+function renderReserve(){
+  const al=state.alliance;if(!al)return;
+  const resNormales=['wood','stone','food','gold'];
+  if(!al.reserveUnlocked){
+    document.getElementById('pane-reserve').innerHTML=`
+      <div class="reserve-unlock-info">
+        🔒 La <strong style="color:var(--gold)">Réserve Commune</strong> est verrouillée. Construisez ensemble le bâtiment <strong style="color:var(--gold)">Salle de l'Alliance</strong> (Caserne Niv.4 + 500🪵 + 400🪨) pour y accéder.
+      </div>
+      <div style="text-align:center;padding:2rem">
+        <div style="font-size:3rem;margin-bottom:.7rem;opacity:.4">📦</div>
+        <div style="font-family:'Uncial Antiqua',serif;color:var(--parch-dim);font-size:.95rem">Réserve Commune Verrouillée</div>
+        <div style="font-size:.78rem;color:var(--parch-dim);font-style:italic;margin-top:.5rem;max-width:320px;margin:auto">Une fois débloquée, vous pourrez y déposer des ressources accessibles à votre allié en temps réel.</div>
+        <button class="btn-action btn-gold" style="width:200px;margin-top:1.2rem" onclick="unlockReserve()">🔓 Débloquer (démo)</button>
+      </div>`;
+    return;
+  }
+  document.getElementById('pane-reserve').innerHTML=`
+    <div style="font-size:.78rem;color:var(--parch-dim);font-style:italic;margin-bottom:.8rem;background:rgba(200,150,12,.05);border:1px solid rgba(200,150,12,.15);border-radius:4px;padding:.5rem .8rem">
+      📦 Réserve commune — accessible aux deux membres de l'alliance en temps réel. Seules les ressources normales sont échangeables.
+    </div>
+    <div class="reserve-grid">
+      ${resNormales.map(r=>`
+        <div class="reserve-slot">
+          <div class="reserve-icon">${RES_ICONS[r]}</div>
+          <div class="reserve-name">${r}</div>
+          <div class="reserve-val" id="reserve-${r}">${al.reserve[r]||0}</div>
+          <div class="reserve-actions">
+            <button class="r-btn r-btn-dep" onclick="reserveDeposit('${r}')">+Dép.</button>
+            <button class="r-btn r-btn-wit" onclick="reserveWithdraw('${r}')">-Ret.</button>
+          </div>
+        </div>`).join('')}
+      ${['runes','mead'].map(r=>`
+        <div class="reserve-slot locked">
+          <div class="reserve-icon">${RES_ICONS[r]}</div>
+          <div class="reserve-name">${r}</div>
+          <div class="reserve-val locked-val">Non échangeable</div>
+        </div>`).join('')}
+    </div>
+    <div class="sec-t">Transactions récentes</div>
+    <div style="background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:4px;padding:.6rem .8rem">
+      ${[
+        {t:'14:10',txt:'Ragnar → +200🪵 déposé',col:'var(--gold)'},
+        {t:'13:45',txt:'Sigrid → +150🪨 déposé',col:'var(--moss-light)'},
+        {t:'12:00',txt:'Ragnar → -50🪙 retiré',col:'var(--blood-bright)'},
+      ].map(a=>`<div style="font-size:.75rem;padding:.22rem 0;border-bottom:1px solid rgba(200,150,12,.05);color:${a.col}"><span style="color:var(--parch-dim);font-size:.65rem;margin-right:.4rem">${a.t}</span>${a.txt}</div>`).join('')}
+    </div>`;
+}
+
+function unlockReserve(){
+  const al=state.alliance;if(!al)return;
+  al.reserveUnlocked=true;toast('📦 Réserve commune débloquée !','s');renderReserve();
+}
+function reserveDeposit(res){
+  const al=state.alliance;if(!al||!al.reserveUnlocked)return;
+  const qty=50;
+  if((state.player.resources[res]||0)<qty){toast(`❌ Pas assez de ${res}`,'d');return}
+  state.player.resources[res]-=qty;al.reserve[res]=(al.reserve[res]||0)+qty;
+  updateRes();
+  const el=document.getElementById('reserve-'+res);if(el)el.textContent=al.reserve[res];
+  toast(`↑ +${qty} ${RES_ICONS[res]} déposé dans la réserve`,'s');
+}
+function reserveWithdraw(res){
+  const al=state.alliance;if(!al||!al.reserveUnlocked)return;
+  const qty=Math.min(50,al.reserve[res]||0);
+  if(qty<=0){toast(`📦 Réserve vide pour ${res}`,'d');return}
+  state.player.resources[res]=(state.player.resources[res]||0)+qty;al.reserve[res]-=qty;
+  updateRes();
+  const el=document.getElementById('reserve-'+res);if(el)el.textContent=al.reserve[res];
+  toast(`↓ +${qty} ${RES_ICONS[res]} retiré de la réserve`,'info');
+}
+
+// ── MONUMENTS ──
+function renderMonuments(){
+  const al=state.alliance;if(!al)return;
+  document.getElementById('pane-monuments').innerHTML=`
+    <div style="font-size:.8rem;color:var(--parch-dim);font-style:italic;margin-bottom:.9rem">
+      Les monuments sont construits conjointement. Chacun offre des bonus permanents à toute l'alliance.
+    </div>
+    <div class="monuments-grid">
+      ${al.monuments.map(m=>`
+        <div class="monument-card ${m.built?'built':''}">
+          <div class="mon-header">
+            <div class="mon-icon">${m.icon}</div>
+            <div>
+              <div class="mon-name">${m.name}</div>
+              <div class="mon-status ${m.built?'built':m.building?'building':'available'}">
+                ${m.built?'✦ Construit':m.building?`🔨 En construction (${m.progress}%)`:'◦ Disponible'}
+              </div>
+            </div>
+          </div>
+          <div class="mon-desc">${m.desc}</div>
+          <div class="mon-bonus">✦ ${m.bonus}</div>
+          ${m.building?`<div class="mon-build-bar"><div class="mon-build-fill" id="mon-fill-${m.id}" style="width:${m.progress}%"></div></div>`:''}
+          ${!m.built?`<div class="mon-cost">
+            ${Object.entries(m.cost).map(([r,v])=>`<div class="mon-cost-chip ${(state.player.resources[r]||0)>=v?'':' style="color:var(--blood-bright)"'}">${RES_ICONS[r]} ${v}</div>`).join('')}
+          </div>
+          <button class="btn-action ${m.building?'btn-cancel':'btn-gold'}" style="font-size:.72rem;padding:.3rem .7rem;width:100%" onclick="${m.building?`cancelMonument('${m.id}')`:`buildMonument('${m.id}')`}">
+            ${m.building?'✕ Annuler':'🔨 Construire'}
+          </button>`:
+          `<div style="font-size:.75rem;color:var(--moss-light);text-align:center;padding:.4rem">✦ Actif — Bonus appliqué</div>`}
+        </div>`).join('')}
+    </div>`;
+}
+
+let monumentTimers={};
+function buildMonument(id){
+  const al=state.alliance;if(!al)return;
+  const m=al.monuments.find(x=>x.id===id);if(!m||m.built||m.building)return;
+  // Vérif coût
+  const canAfford=Object.entries(m.cost).every(([r,v])=>(state.player.resources[r]||0)>=v/2);
+  if(!canAfford){toast('❌ Ressources insuffisantes pour votre part','d');return}
+  Object.entries(m.cost).forEach(([r,v])=>{state.player.resources[r]=Math.max(0,(state.player.resources[r]||0)-Math.floor(v/2))});
+  m.building=true;m.progress=0;
+  updateRes();renderMonuments();
+  toast(`🔨 Construction de "${m.name}" lancée !`,'s');
+  // Timer
+  monumentTimers[id]=setInterval(()=>{
+    m.progress=Math.min(100,m.progress+100/m.buildTime);
+    const fill=document.getElementById('mon-fill-'+id);if(fill)fill.style.width=m.progress+'%';
+    if(m.progress>=100){
+      clearInterval(monumentTimers[id]);m.building=false;m.built=true;m.progress=100;
+      al.totalGlory+=200;
+      toast(`✦ "${m.name}" construit ! +200 Gloire !`,'s');
+      renderMonuments();renderSidebar();renderOverview();
+    }
+  },1000);
+}
+function cancelMonument(id){
+  const al=state.alliance;if(!al)return;
+  const m=al.monuments.find(x=>x.id===id);if(!m)return;
+  clearInterval(monumentTimers[id]);
+  Object.entries(m.cost).forEach(([r,v])=>{state.player.resources[r]=(state.player.resources[r]||0)+Math.floor(v/4)});
+  m.building=false;m.progress=0;updateRes();renderMonuments();
+  toast('✕ Construction annulée — 25% remboursé','info');
+}
+function startMonumentTimers(){
+  const al=state.alliance;if(!al)return;
+  al.monuments.filter(m=>m.building).forEach(m=>{
+    monumentTimers[m.id]=setInterval(()=>{
+      m.progress=Math.min(100,m.progress+100/m.buildTime);
+      const fill=document.getElementById('mon-fill-'+m.id);if(fill)fill.style.width=m.progress+'%';
+      if(m.progress>=100){clearInterval(monumentTimers[m.id]);m.building=false;m.built=true;
+        al.totalGlory+=200;toast(`✦ Monument terminé ! +200 Gloire !`,'s');
+        renderMonuments();renderSidebar();renderOverview();}
+    },1000);
+  });
+}
+
+// ── CHAT ──
+function renderChat(){
+  const al=state.alliance;if(!al)return;
+  const msgs=al.chat.map(m=>`
+    <div class="chat-msg">
+      <span class="chat-author ${m.cls}">${m.author}</span>
+      <span class="chat-text">${m.text}</span>
+      <span class="chat-time">${m.time}</span>
+    </div>`).join('');
+  document.getElementById('pane-chat').innerHTML=`
+    <div class="chat-wrap">
+      <div class="chat-messages" id="chat-messages">${msgs}</div>
+      <div class="chat-input-row">
+        <input class="chat-input" id="chat-input" placeholder="Parlez à votre allié…" maxlength="200" onkeydown="if(event.key==='Enter')sendChat()">
+        <button class="chat-send" onclick="sendChat()">Envoyer ↵</button>
+      </div>
+      <div style="font-size:.65rem;color:var(--parch-dim);font-style:italic;margin-top:.3rem">💬 Chat en temps réel via le serveur d'alliance (simulation — branchez un backend pour le multi)</div>
+    </div>`;
+  scrollChat();
+}
+function scrollChat(){setTimeout(()=>{const c=document.getElementById('chat-messages');if(c)c.scrollTop=c.scrollHeight},50)}
+function sendChat(){
+  const al=state.alliance;if(!al)return;
+  const inp=document.getElementById('chat-input');if(!inp||!inp.value.trim())return;
+  const msg={author:state.player.name,cls:'self',text:inp.value.trim(),time:new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})};
+  al.chat.push(msg);inp.value='';
+  const c=document.getElementById('chat-messages');
+  if(c){
+    const d=document.createElement('div');d.className='chat-msg';
+    d.innerHTML=`<span class="chat-author self">${msg.author}</span><span class="chat-text">${msg.text}</span><span class="chat-time">${msg.time}</span>`;
+    c.appendChild(d);c.scrollTop=c.scrollHeight;
+  }
+  // Réponse simulée de l'allié
+  if(Math.random()<.5){
+    setTimeout(()=>{
+      const replies=['Je vois ça ! On attaque ensemble ce soir ?','Bien reçu ⚔','Oui ! J\'envoie du bois dès que mon péon revient.','Les Draugr approchent du nord, attention !','Runestone presque construite !'];
+      const ally=al.members.find(m=>!m.self);
+      const r={author:ally?.name||'Allié',cls:'ally',text:replies[Math.floor(Math.random()*replies.length)],time:new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})};
+      al.chat.push(r);
+      const c=document.getElementById('chat-messages');
+      if(c){const d=document.createElement('div');d.className='chat-msg';
+        d.innerHTML=`<span class="chat-author ally">${r.author}</span><span class="chat-text">${r.text}</span><span class="chat-time">${r.time}</span>`;
+        c.appendChild(d);c.scrollTop=c.scrollHeight;}
+    },1200+Math.random()*1800);
+  }
+}
+
+// ── MODAL ──
+function openModal(title,body,onConfirm){
+  document.getElementById('modal-title').textContent=title;
+  document.getElementById('modal-body').textContent=body;
+  document.getElementById('modal-confirm').onclick=()=>{onConfirm();closeModal()};
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal(){document.getElementById('modal').classList.remove('open')}
+
+// ── BOUCLE ──
+function updateRes(){
+  Object.entries(state.player.resources).forEach(([k,v])=>{
+    const el=document.getElementById('r-'+k);if(el)el.textContent=Math.floor(v);
+  });
+}
+function toast(msg,type){
+  const c=document.getElementById('toasts');const el=document.createElement('div');
+  el.className='toast'+(type?' '+type:'');el.textContent=msg;c.appendChild(el);setTimeout(()=>el.remove(),4200);
+}
+
+setInterval(()=>{
+  state.tick++;
+  if(state.tick%10===0){
+    const r=state.player.resources;
+    r.food+=10;r.wood+=8;r.stone+=5;r.gold+=2;
+    updateRes();
+  }
+  // Péon timer
+  const al=state.alliance;
+  if(al?.peonBusy&&al.peonTicksLeft>0){
+    al.peonTicksLeft--;
+    const bar=document.getElementById('peon-bar');
+    if(bar)bar.style.width=((al.peonTotal-al.peonTicksLeft)/al.peonTotal*100)+'%';
+    if(al.peonTicksLeft<=0){
+      al.peonBusy=false;
+      al.peonLog.unshift({text:`Livraison à ${al.peonTarget} — confirmée`,cls:'send',t:new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})});
+      toast(`✦ Péon arrivé chez ${al.peonTarget} !`,'s');
+      renderPeon();
+    }
+  }
+  // Messages aléatoires de l'allié (simulation)
+  if(al&&state.tick%90===0){
+    const events=['J\'ai repoussé un Draugr 💀','Mes ressources sont pleines, je dépose dans la réserve.','Attention vague ennemie signalée au nord !'];
+    const ally=al.members.find(m=>!m.self);
+    const evt={author:ally?.name||'Allié',cls:'ally',text:events[Math.floor(Math.random()*events.length)],time:new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})};
+    al.chat.push(evt);
+    const c=document.getElementById('chat-messages');
+    if(c){const d=document.createElement('div');d.className='chat-msg';
+      d.innerHTML=`<span class="chat-author ally">${evt.author}</span><span class="chat-text">${evt.text}</span><span class="chat-time">${evt.time}</span>`;
+      c.appendChild(d);c.scrollTop=c.scrollHeight;}
+    toast(`💬 ${ally?.name||'Allié'} : "${evt.text}"`,'info');
+  }
+},1000);
+
+init();
+setTimeout(()=>toast('🤝 Alliance "Fils de Yggdrasil" connectée !','s'),1000);
+</script>
+</body>
+</html>
