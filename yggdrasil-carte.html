@@ -3,1664 +3,1039 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>YGGDRASIL — Carte du Monde</title>
-<link href="https://fonts.googleapis.com/css2?family=MedievalSharp&family=Uncial+Antiqua&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<title>YGGDRASIL — Carte</title>
+<link href="https://fonts.googleapis.com/css2?family=Uncial+Antiqua&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
 <style>
-/* ═══════════════════════════════════════════
-   VARIABLES & RESET
-═══════════════════════════════════════════ */
-:root {
-  --ink:        #1a1008;
-  --parch:      #c8a96e;
-  --parch-dark: #9a7a45;
-  --parch-light:#e8d5a3;
-  --blood:      #8b1a1a;
-  --blood-bright:#c0392b;
-  --frost:      #4a9abb;
-  --frost-light:#7ec8e3;
-  --gold:       #d4a017;
-  --gold-light: #f0c040;
-  --moss:       #4a6741;
-  --moss-light: #6b9c5e;
-  --shadow:     rgba(10,5,0,0.7);
-  --rune-glow:  rgba(212,160,23,0.6);
-
-  /* Saisons */
-  --sky-spring: linear-gradient(180deg, #b8d4e8 0%, #d4e8c2 100%);
-  --sky-summer: linear-gradient(180deg, #4a90d9 0%, #87ceeb 60%, #f0e68c 100%);
-  --sky-autumn: linear-gradient(180deg, #8b4513 0%, #cd853f 40%, #daa520 100%);
-  --sky-winter: linear-gradient(180deg, #1a2a3a 0%, #2a4a6a 50%, #c8d8e8 100%);
-}
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-html, body {
-  height: 100%;
-  overflow: hidden;
-  font-family: 'IM Fell English', Georgia, serif;
-  background: var(--ink);
-  color: var(--parch);
-  user-select: none;
-}
-
-/* ═══════════════════════════════════════════
-   LAYOUT PRINCIPAL
-═══════════════════════════════════════════ */
-#app {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  position: relative;
-}
-
-/* ═══════════════════════════════════════════
-   CIEL / FOND ANIMÉ
-═══════════════════════════════════════════ */
-#sky {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  transition: background 4s ease;
-  background: var(--sky-summer);
-}
-
-.cloud {
-  position: absolute;
-  border-radius: 50px;
-  opacity: 0.15;
-  animation: drift linear infinite;
-}
-
-@keyframes drift {
-  from { transform: translateX(-200px); }
-  to   { transform: translateX(calc(100vw + 200px)); }
-}
-
-.star {
-  position: absolute;
-  background: white;
-  border-radius: 50%;
-  opacity: 0;
-  transition: opacity 2s;
-}
-
-/* ═══════════════════════════════════════════
-   TOPBAR — BARRE DE STATUT
-═══════════════════════════════════════════ */
-#topbar {
-  position: relative;
-  z-index: 100;
-  background: rgba(15,8,2,0.92);
-  border-bottom: 2px solid var(--parch-dark);
-  padding: 0.5rem 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  flex-wrap: wrap;
-  backdrop-filter: blur(4px);
-  box-shadow: 0 2px 20px rgba(0,0,0,0.8);
-}
-
-#topbar::after {
-  content: '';
-  position: absolute;
-  bottom: -4px; left: 0; right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--gold), transparent);
-  opacity: 0.5;
-}
-
-.game-logo {
-  font-family: 'Uncial Antiqua', serif;
-  font-size: 1.4rem;
-  color: var(--gold);
-  letter-spacing: 3px;
-  text-shadow: 0 0 20px var(--rune-glow);
-  flex-shrink: 0;
-  cursor: default;
-}
-
-.game-logo span {
-  font-size: 0.65rem;
-  display: block;
-  letter-spacing: 4px;
-  color: var(--parch-dark);
-  text-align: center;
-  margin-top: -4px;
-}
-
-.topbar-divider {
-  width: 1px;
-  height: 30px;
-  background: var(--parch-dark);
-  opacity: 0.4;
-  flex-shrink: 0;
-}
-
-/* Ressources */
-.res-group {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.res-chip {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  background: rgba(200,169,110,0.08);
-  border: 1px solid rgba(200,169,110,0.2);
-  border-radius: 3px;
-  padding: 0.25rem 0.55rem;
-  font-size: 0.82rem;
-  transition: border-color 0.3s;
-}
-
-.res-chip:hover { border-color: var(--gold); }
-.res-chip .icon { font-size: 0.9rem; }
-.res-chip .val  { color: var(--parch-light); font-weight: 600; min-width: 28px; }
-.res-chip .rate { color: var(--moss-light); font-size: 0.7rem; }
-.res-chip.rare  { border-color: rgba(212,160,23,0.3); }
-.res-chip.rare .val { color: var(--gold-light); }
-
-/* Météo & Saison */
-.weather-block {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  background: rgba(200,169,110,0.06);
-  border: 1px solid rgba(200,169,110,0.15);
-  border-radius: 3px;
-  padding: 0.25rem 0.7rem;
-  margin-left: auto;
-}
-
-.season-icon { font-size: 1.2rem; }
-
-.season-info { line-height: 1.2; }
-.season-name { font-size: 0.8rem; color: var(--gold-light); font-family: 'Uncial Antiqua', serif; }
-.weather-desc { font-size: 0.7rem; color: var(--parch-dark); font-style: italic; }
-
-.day-counter {
-  font-family: 'Uncial Antiqua', serif;
-  font-size: 0.75rem;
-  color: var(--parch-dark);
-  letter-spacing: 1px;
-  text-align: right;
-}
-
-.cycle-bar {
-  width: 60px;
-  height: 4px;
-  background: rgba(200,169,110,0.15);
-  border-radius: 2px;
-  overflow: hidden;
-  margin-top: 2px;
-}
-
-.cycle-fill {
-  height: 100%;
-  border-radius: 2px;
-  transition: width 1s linear;
-}
-
-/* Joueur */
-.player-chip {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  background: rgba(200,169,110,0.08);
-  border: 1px solid rgba(200,169,110,0.25);
-  border-radius: 20px;
-  padding: 0.25rem 0.8rem;
-  font-size: 0.82rem;
-  flex-shrink: 0;
-}
-
-.role-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.role-jarl   { background: #c0392b; box-shadow: 0 0 6px #c0392b; }
-.role-chaman { background: #8e44ad; box-shadow: 0 0 6px #8e44ad; }
-.role-skald  { background: #2980b9; box-shadow: 0 0 6px #2980b9; }
-.role-forge  { background: #d35400; box-shadow: 0 0 6px #d35400; }
-
-/* ═══════════════════════════════════════════
-   CONTENEUR CARTE
-═══════════════════════════════════════════ */
-#map-container {
-  position: relative;
-  z-index: 10;
-  flex: 1;
-  overflow: hidden;
-  cursor: grab;
-}
-
-#map-container:active { cursor: grabbing; }
-
-#map-wrap {
-  position: absolute;
-  transform-origin: 0 0;
-  transition: transform 0.05s linear;
-}
-
-/* ═══════════════════════════════════════════
-   GRILLE DE CASES
-═══════════════════════════════════════════ */
-#map-grid {
-  display: grid;
-  grid-template-columns: repeat(17, 64px);
-  grid-template-rows: repeat(17, 64px);
-  gap: 2px;
-  padding: 20px;
-}
-
-.cell {
-  width: 64px;
-  height: 64px;
-  border-radius: 4px;
-  position: relative;
-  cursor: pointer;
-  transition: transform 0.12s, box-shadow 0.12s;
-  overflow: visible;
-  border: 1px solid transparent;
-}
-
-.cell:hover { transform: scale(1.08); z-index: 50; }
-
-/* Types de terrain */
-.cell-fog {
-  background: radial-gradient(ellipse, #0d0a05 60%, #1a1208);
-  border-color: #2a2010;
-}
-
-.cell-fog::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: url("data:image/svg+xml,%3Csvg width='64' height='64' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='20' cy='30' r='18' fill='%23151005' opacity='.6'/%3E%3Ccircle cx='45' cy='20' r='14' fill='%231a1508' opacity='.5'/%3E%3C/svg%3E");
-  border-radius: 4px;
-}
-
-.cell-plains {
-  background: linear-gradient(135deg, #5a7a35 0%, #4a6a28 50%, #3d5a22 100%);
-  border-color: #3a5a20;
-}
-
-.cell-forest {
-  background: linear-gradient(135deg, #2d4a1a 0%, #1e3510 60%, #2a4515 100%);
-  border-color: #1a3010;
-}
-
-.cell-mountain {
-  background: linear-gradient(160deg, #6a5a4a 0%, #4a3a2a 50%, #3a2a1a 100%);
-  border-color: #3a2a1a;
-}
-
-.cell-water {
-  background: linear-gradient(135deg, #1a4a6a 0%, #0d2d4a 60%, #152840 100%);
-  border-color: #0d2030;
-  animation: waterShimmer 3s ease-in-out infinite;
-}
-
-@keyframes waterShimmer {
-  0%,100% { filter: brightness(1); }
-  50%      { filter: brightness(1.15); }
-}
-
-.cell-tundra {
-  background: linear-gradient(135deg, #8ab4c8 0%, #6a94a8 50%, #5a8498 100%);
-  border-color: #5a8090;
-}
-
-.cell-swamp {
-  background: linear-gradient(135deg, #3a4a1a 0%, #2a3a10 60%, #1e2e0d 100%);
-  border-color: #1a2a08;
-}
-
-.cell-ruins {
-  background: linear-gradient(135deg, #4a3a2a 0%, #3a2a1a 50%, #2a1a0a 100%);
-  border-color: #2a1a08;
-}
-
-/* Surbrillance hover */
-.cell:not(.cell-fog):hover {
-  box-shadow: 0 0 0 2px var(--gold), 0 4px 16px rgba(212,160,23,0.3);
-  border-color: var(--gold);
-}
-
-/* Icône de case */
-.cell-icon {
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 1.8rem;
-  pointer-events: none;
-  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.8));
-  transition: transform 0.2s;
-}
-
-.cell:hover .cell-icon { transform: translate(-50%, -55%) scale(1.15); }
-
-/* Badge de case (ressources, danger...) */
-.cell-badge {
-  position: absolute;
-  top: 2px; right: 2px;
-  font-size: 0.55rem;
-  background: rgba(10,5,0,0.85);
-  border: 1px solid var(--parch-dark);
-  border-radius: 3px;
-  padding: 1px 3px;
-  color: var(--parch-light);
-  pointer-events: none;
-  letter-spacing: 0.5px;
-}
-
-/* Marqueurs d'événements (traces visuelles) */
-.cell-event {
-  position: absolute;
-  bottom: 2px; left: 2px;
-  font-size: 0.65rem;
-  pointer-events: none;
-  animation: eventPulse 2s ease-in-out infinite;
-}
-
-@keyframes eventPulse {
-  0%,100% { opacity: 0.8; transform: scale(1); }
-  50%      { opacity: 1; transform: scale(1.2); }
-}
-
-/* Village allié */
-.cell-village-ally {
-  box-shadow: 0 0 12px rgba(100,200,80,0.4), inset 0 0 8px rgba(100,200,80,0.1);
-  border-color: rgba(100,200,80,0.6) !important;
-}
-
-/* Village ennemi */
-.cell-village-enemy {
-  box-shadow: 0 0 12px rgba(200,60,40,0.4), inset 0 0 8px rgba(200,60,40,0.1);
-  border-color: rgba(200,60,40,0.6) !important;
-}
-
-/* Frontière de royaume */
-.cell-border-top    { border-top: 2px solid rgba(212,160,23,0.5) !important; }
-.cell-border-left   { border-left: 2px solid rgba(212,160,23,0.5) !important; }
-
-/* ═══════════════════════════════════════════
-   MINIMAP
-═══════════════════════════════════════════ */
-#minimap {
-  position: fixed;
-  bottom: 1rem;
-  right: 1rem;
-  z-index: 200;
-  background: rgba(10,5,0,0.9);
-  border: 1px solid var(--parch-dark);
-  border-radius: 4px;
-  padding: 6px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
-}
-
-#minimap-canvas {
-  display: block;
-  width: 120px;
-  height: 120px;
-  image-rendering: pixelated;
-}
-
-.minimap-label {
-  font-size: 0.6rem;
-  color: var(--parch-dark);
-  text-align: center;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  margin-bottom: 3px;
-}
-
-/* ═══════════════════════════════════════════
-   MENU RADIAL
-═══════════════════════════════════════════ */
-#radial-menu {
-  position: fixed;
-  z-index: 500;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-
-#radial-menu.open {
-  opacity: 1;
-  pointer-events: all;
-}
-
-.radial-center {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  width: 44px; height: 44px;
-  border-radius: 50%;
-  background: rgba(10,5,0,0.95);
-  border: 2px solid var(--gold);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.4rem;
-  box-shadow: 0 0 20px var(--rune-glow);
-  z-index: 10;
-}
-
-.radial-btn {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  width: 48px; height: 48px;
-  border-radius: 50%;
-  background: rgba(15,8,2,0.95);
-  border: 1.5px solid var(--parch-dark);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.15s;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.6);
-}
-
-.radial-btn:hover {
-  background: rgba(212,160,23,0.15);
-  border-color: var(--gold);
-  transform: translate(-50%, -50%) scale(1.15);
-  box-shadow: 0 0 15px var(--rune-glow);
-}
-
-.radial-btn .r-icon { font-size: 1.1rem; }
-.radial-btn .r-label {
-  font-size: 0.5rem;
-  color: var(--parch-dark);
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  margin-top: 1px;
-  white-space: nowrap;
-}
-
-.radial-btn:hover .r-label { color: var(--gold-light); }
-
-/* Ligne de connexion radiale */
-.radial-line {
-  position: absolute;
-  transform-origin: 0 50%;
-  height: 1px;
-  background: linear-gradient(90deg, var(--gold), transparent);
-  opacity: 0.3;
-  pointer-events: none;
-}
-
-/* ═══════════════════════════════════════════
-   PANNEAU VILLAGE
-═══════════════════════════════════════════ */
-#village-panel {
-  position: fixed;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%) translateX(-120%);
-  z-index: 300;
-  width: 280px;
-  background: rgba(12,6,2,0.97);
-  border: 1px solid var(--parch-dark);
-  border-radius: 6px;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.8), inset 0 1px 0 rgba(212,160,23,0.1);
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  overflow: hidden;
-}
-
-#village-panel.open {
-  transform: translateY(-50%) translateX(0);
-}
-
-.panel-header {
-  background: rgba(212,160,23,0.08);
-  border-bottom: 1px solid rgba(212,160,23,0.2);
-  padding: 0.8rem 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.panel-icon { font-size: 1.6rem; }
-
-.panel-title-block { flex: 1; }
-.panel-title {
-  font-family: 'Uncial Antiqua', serif;
-  font-size: 1rem;
-  color: var(--gold-light);
-  letter-spacing: 1px;
-}
-
-.panel-subtitle { font-size: 0.75rem; color: var(--parch-dark); font-style: italic; }
-
-.panel-close {
-  width: 24px; height: 24px;
-  border-radius: 50%;
-  background: rgba(200,169,110,0.1);
-  border: 1px solid var(--parch-dark);
-  color: var(--parch-dark);
-  font-size: 0.8rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-}
-
-.panel-close:hover { background: rgba(200,60,40,0.2); border-color: var(--blood-bright); color: var(--blood-bright); }
-
-.panel-body { padding: 0.8rem 1rem; }
-
-.panel-section { margin-bottom: 1rem; }
-
-.panel-section-title {
-  font-size: 0.65rem;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: var(--parch-dark);
-  margin-bottom: 0.5rem;
-  padding-bottom: 0.3rem;
-  border-bottom: 1px solid rgba(200,169,110,0.1);
-}
-
-/* Barre de gloire */
-.glory-bar-wrap {
-  background: rgba(0,0,0,0.4);
-  border-radius: 3px;
-  height: 8px;
-  overflow: hidden;
-  margin-top: 0.3rem;
-}
-
-.glory-bar {
-  height: 100%;
-  background: linear-gradient(90deg, var(--gold), var(--gold-light));
-  border-radius: 3px;
-  transition: width 1s ease;
-  box-shadow: 0 0 6px rgba(212,160,23,0.5);
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.4rem;
-}
-
-.stat-item {
-  background: rgba(200,169,110,0.05);
-  border: 1px solid rgba(200,169,110,0.1);
-  border-radius: 3px;
-  padding: 0.35rem 0.5rem;
-}
-
-.stat-label { font-size: 0.65rem; color: var(--parch-dark); }
-.stat-val   { font-size: 0.95rem; color: var(--parch-light); font-weight: 600; }
-
-.building-list { display: flex; flex-direction: column; gap: 0.3rem; }
-
-.bld-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.3rem 0.5rem;
-  background: rgba(200,169,110,0.04);
-  border: 1px solid rgba(200,169,110,0.08);
-  border-radius: 3px;
-}
-
-.bld-icon { font-size: 1rem; }
-.bld-name { flex: 1; font-size: 0.82rem; }
-.bld-lvl  {
-  font-size: 0.7rem;
-  background: rgba(212,160,23,0.12);
-  border: 1px solid rgba(212,160,23,0.25);
-  border-radius: 10px;
-  padding: 1px 6px;
-  color: var(--gold);
-}
-
-.panel-action-btn {
-  display: block;
-  width: 100%;
-  padding: 0.55rem;
-  font-family: 'Uncial Antiqua', serif;
-  font-size: 0.8rem;
-  letter-spacing: 1.5px;
-  background: rgba(212,160,23,0.1);
-  border: 1px solid rgba(212,160,23,0.4);
-  color: var(--gold);
-  cursor: pointer;
-  border-radius: 3px;
-  transition: all 0.2s;
-  margin-top: 0.5rem;
-  text-align: center;
-}
-
-.panel-action-btn:hover {
-  background: rgba(212,160,23,0.22);
-  box-shadow: 0 0 12px rgba(212,160,23,0.2);
-}
-
-/* ═══════════════════════════════════════════
-   PANNEAU INFO CASE
-═══════════════════════════════════════════ */
-#cell-info {
-  position: fixed;
-  bottom: 1rem;
-  left: 50%;
-  transform: translateX(-50%) translateY(120%);
-  z-index: 300;
-  background: rgba(12,6,2,0.97);
-  border: 1px solid var(--parch-dark);
-  border-radius: 4px;
-  padding: 0.6rem 1.2rem;
-  min-width: 220px;
-  text-align: center;
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.7);
-}
-
-#cell-info.open { transform: translateX(-50%) translateY(0); }
-
-.cell-info-name {
-  font-family: 'Uncial Antiqua', serif;
-  color: var(--gold-light);
-  font-size: 0.95rem;
-  margin-bottom: 0.2rem;
-}
-
-.cell-info-desc { font-size: 0.8rem; color: var(--parch-dark); font-style: italic; }
-.cell-info-effects { font-size: 0.75rem; color: var(--parch); margin-top: 0.3rem; }
-
-/* ═══════════════════════════════════════════
-   ÉVÉNEMENT / TOAST
-═══════════════════════════════════════════ */
-#event-overlay {
-  position: fixed;
-  top: 5rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 600;
-  pointer-events: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.event-toast {
-  background: rgba(10,5,0,0.97);
-  border: 1px solid var(--gold);
-  border-radius: 4px;
-  padding: 0.6rem 1.4rem;
-  font-family: 'Uncial Antiqua', serif;
-  font-size: 0.85rem;
-  color: var(--gold-light);
-  letter-spacing: 1px;
-  box-shadow: 0 4px 20px rgba(212,160,23,0.2);
-  animation: toastIn 0.4s cubic-bezier(0.34,1.56,0.64,1), toastOut 0.3s ease 3.5s forwards;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-@keyframes toastIn  { from { opacity:0; transform: translateY(-20px) scale(0.9); } }
-@keyframes toastOut { to   { opacity:0; transform: translateY(-10px); } }
-
-/* ═══════════════════════════════════════════
-   LÉGENDE
-═══════════════════════════════════════════ */
-#legend {
-  position: fixed;
-  bottom: 1rem;
-  left: 1rem;
-  z-index: 200;
-  background: rgba(10,5,0,0.85);
-  border: 1px solid rgba(200,169,110,0.2);
-  border-radius: 4px;
-  padding: 0.5rem 0.8rem;
-  display: flex;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-  max-width: 280px;
-  backdrop-filter: blur(3px);
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  font-size: 0.65rem;
-  color: var(--parch-dark);
-}
-
-.legend-dot {
-  width: 10px; height: 10px;
-  border-radius: 2px;
-  flex-shrink: 0;
-}
-
-/* ═══════════════════════════════════════════
-   CONTRÔLES ZOOM
-═══════════════════════════════════════════ */
-#zoom-controls {
-  position: fixed;
-  right: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 200;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.zoom-btn {
-  width: 34px; height: 34px;
-  background: rgba(10,5,0,0.9);
-  border: 1px solid var(--parch-dark);
-  border-radius: 4px;
-  color: var(--parch);
-  font-size: 1.1rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-}
-
-.zoom-btn:hover { border-color: var(--gold); color: var(--gold); background: rgba(212,160,23,0.1); }
-
-/* ═══════════════════════════════════════════
-   EFFET MÉTÉO OVERLAY
-═══════════════════════════════════════════ */
-#weather-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 15;
-  pointer-events: none;
-  transition: opacity 2s;
-}
-
-/* Neige */
-.snowflake {
-  position: absolute;
-  top: -10px;
-  color: rgba(200,230,255,0.7);
-  font-size: 1rem;
-  animation: snowfall linear infinite;
-  pointer-events: none;
-}
-
-@keyframes snowfall {
-  to { transform: translateY(100vh) rotate(360deg); opacity: 0; }
-}
-
-/* Pluie */
-.raindrop {
-  position: absolute;
-  top: -20px;
-  width: 1px;
-  background: linear-gradient(180deg, transparent, rgba(120,160,200,0.5));
-  animation: rainfall linear infinite;
-}
-
-@keyframes rainfall {
-  to { transform: translateY(100vh); opacity: 0; }
-}
-
-/* ═══════════════════════════════════════════
-   RESPONSIVE
-═══════════════════════════════════════════ */
-@media (max-width: 600px) {
-  .res-chip .rate { display: none; }
-  .weather-block  { display: none; }
-  #legend         { display: none; }
-  #village-panel  { width: calc(100vw - 2rem); left: 1rem; }
-}
+:root{
+  --ink:#0e0a04;--parch:#d4b896;--parch-dim:#8a7055;--parch-light:#f0dfc0;
+  --gold:#c8960c;--gold-light:#f0c040;--gold-glow:rgba(200,150,12,.5);
+  --blood:#8b1a1a;--blood-bright:#e74c3c;--moss:#4a7a35;--moss-light:#6aaa50;
+  --purple:#8e44ad;--frost:#4a9abb;--border:rgba(200,150,12,.22);--panel:rgba(14,10,4,.95);
+  --cell:44px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'IM Fell English',Georgia,serif;background:var(--ink);color:var(--parch);overflow:hidden;user-select:none}
+
+/* TOPBAR */
+#topbar{position:relative;z-index:200;background:rgba(8,5,1,.97);border-bottom:1px solid var(--border);padding:.35rem .8rem;display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;flex-shrink:0;box-shadow:0 2px 20px rgba(0,0,0,.8)}
+.logo{font-family:'Uncial Antiqua',serif;font-size:1.1rem;color:var(--gold);letter-spacing:3px;text-shadow:0 0 15px var(--gold-glow);text-decoration:none}
+.logo span{font-size:.5rem;display:block;color:var(--parch-dim);letter-spacing:3px}
+.sep{width:1px;height:22px;background:var(--border);flex-shrink:0}
+.res{display:flex;align-items:center;gap:.18rem;background:rgba(200,150,12,.06);border:1px solid var(--border);border-radius:3px;padding:.13rem .38rem;font-size:.73rem}
+.res .v{color:var(--parch-light);font-weight:600;min-width:20px}
+.res.rare .v{color:var(--gold-light)}
+.season-chip{display:flex;align-items:center;gap:.35rem;padding:.15rem .6rem;border-radius:3px;border:1px solid var(--border);font-size:.72rem;background:rgba(200,150,12,.06)}
+.nav-links{margin-left:auto;display:flex;gap:.32rem}
+.nav-link{font-family:'Uncial Antiqua',serif;font-size:.6rem;letter-spacing:1px;color:var(--parch-dim);text-decoration:none;padding:.2rem .5rem;border:1px solid var(--border);border-radius:3px;transition:all .2s}
+.nav-link:hover,.nav-link.active{color:var(--gold);border-color:rgba(200,150,12,.5);background:rgba(200,150,12,.07)}
+
+/* MAP LAYOUT */
+#map-wrap{display:flex;flex-direction:column;height:calc(100vh - 44px);position:relative;overflow:hidden}
+#map-container{flex:1;overflow:hidden;position:relative;cursor:grab}
+#map-container.panning{cursor:grabbing}
+#map-canvas-wrap{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform}
+#map-grid{display:grid;grid-template-columns:repeat(17,var(--cell));gap:2px;padding:8px;position:relative}
+
+/* CELLULES */
+.cell{width:var(--cell);height:var(--cell);border-radius:4px;position:relative;cursor:pointer;transition:transform .12s,filter .12s;overflow:visible;display:flex;align-items:center;justify-content:center;font-size:1.1rem;border:1px solid rgba(0,0,0,.3)}
+.cell:hover:not(.fog){transform:scale(1.08);z-index:10;filter:brightness(1.25)}
+.cell.fog{background:#0c0a08 !important;border-color:rgba(255,255,255,.04);cursor:default;font-size:0}
+.cell.fog::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse,rgba(30,20,10,.8),rgba(5,3,1,.95));border-radius:3px}
+
+/* TERRAINS */
+.t-plain  {background:linear-gradient(135deg,#2a3a1a,#354a20)}
+.t-forest {background:linear-gradient(135deg,#1a3a1a,#224a22)}
+.t-mountain{background:linear-gradient(135deg,#3a3a3a,#4a4a4a)}
+.t-water  {background:linear-gradient(135deg,#0a2a4a,#0e3860)}
+.t-tundra {background:linear-gradient(135deg,#3a3a4a,#4a4a5a)}
+.t-swamp  {background:linear-gradient(135deg,#1a2a1a,#253530)}
+.t-ruins  {background:linear-gradient(135deg,#2a1a0a,#3a2010)}
+.t-volcano{background:linear-gradient(135deg,#3a1a0a,#5a2010)}
+.t-crystal{background:linear-gradient(135deg,#0a1a3a,#12265a)}
+
+/* MARQUEURS SPÉCIAUX */
+.cell-mark{position:absolute;top:1px;right:1px;font-size:.55rem;line-height:1;z-index:5}
+.cell-event{position:absolute;bottom:1px;left:50%;transform:translateX(-50%);font-size:.55rem;z-index:5;animation:eventPulse 1.5s ease-in-out infinite}
+@keyframes eventPulse{0%,100%{opacity:.7;transform:translateX(-50%) scale(1)}50%{opacity:1;transform:translateX(-50%) scale(1.3)}}
+.cell-trace{position:absolute;inset:0;border-radius:3px;pointer-events:none;z-index:2}
+.cell-kingdom-border{position:absolute;inset:0;border-radius:3px;pointer-events:none;z-index:4}
+
+/* VILLAGES IA */
+.ai-clan-marker{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1rem;z-index:3}
+.ai-clan-marker.hostile{filter:drop-shadow(0 0 4px rgba(231,76,60,.6))}
+.ai-clan-marker.neutral{filter:drop-shadow(0 0 4px rgba(200,150,12,.4))}
+.ai-clan-marker.ally{filter:drop-shadow(0 0 4px rgba(106,170,80,.5))}
+
+/* BROUILLARD PARTIEL */
+.cell.partial-fog::after{content:'';position:absolute;inset:0;background:rgba(5,3,1,.55);border-radius:3px;pointer-events:none;z-index:6}
+
+/* MINIMAP */
+#minimap-wrap{position:absolute;bottom:60px;right:10px;z-index:150;background:rgba(8,5,1,.92);border:1px solid var(--border);border-radius:5px;padding:5px;box-shadow:0 4px 20px rgba(0,0,0,.7)}
+#minimap{width:136px;height:136px;display:grid;grid-template-columns:repeat(17,8px);gap:0;position:relative}
+.mm-cell{width:8px;height:8px;border-radius:1px}
+#mm-viewport{position:absolute;border:1px solid var(--gold);border-radius:2px;pointer-events:none;transition:all .1s}
+#minimap-wrap label{font-size:.55rem;color:var(--parch-dim);letter-spacing:1px;text-transform:uppercase;display:block;text-align:center;margin-bottom:3px}
+
+/* BOTTOM BAR */
+#bottombar{position:relative;z-index:200;background:rgba(8,5,1,.97);border-top:1px solid var(--border);padding:.3rem .8rem;display:flex;align-items:center;gap:.6rem;flex-shrink:0}
+.bb-item{font-size:.72rem;color:var(--parch-dim);display:flex;align-items:center;gap:.28rem}
+.bb-item b{color:var(--parch-light)}
+.moral-bar-bg{width:55px;height:5px;background:rgba(0,0,0,.4);border-radius:3px;overflow:hidden;display:inline-block}
+.moral-bar{height:100%;border-radius:3px;transition:width .5s,background .5s}
+#day-counter{font-family:'Uncial Antiqua',serif;font-size:.8rem;color:var(--gold)}
+
+/* MENU RADIAL */
+#radial-menu{position:fixed;z-index:500;display:none;pointer-events:none}
+#radial-menu.open{display:block;pointer-events:all}
+.rm-ring{position:absolute;transform:translate(-50%,-50%)}
+.rm-btn{position:absolute;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;cursor:pointer;border:2px solid var(--border);background:rgba(10,6,2,.97);transition:all .2s;transform:translate(-50%,-50%);box-shadow:0 2px 12px rgba(0,0,0,.7)}
+.rm-btn:hover{transform:translate(-50%,-50%) scale(1.18);border-color:var(--gold);background:rgba(30,18,4,.98);box-shadow:0 0 12px var(--gold-glow)}
+.rm-center{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.2rem;cursor:pointer;border:2px solid var(--gold);background:rgba(10,6,2,.97);position:absolute;transform:translate(-50%,-50%);box-shadow:0 0 15px var(--gold-glow)}
+.rm-label{position:absolute;font-size:.58rem;color:var(--parch-dim);white-space:nowrap;text-align:center;transform:translate(-50%,-50%);pointer-events:none;background:rgba(8,5,1,.85);padding:.1rem .3rem;border-radius:2px}
+
+/* SIDE PANEL */
+#side-panel{position:absolute;right:0;top:0;bottom:0;width:280px;background:var(--panel);border-left:1px solid var(--border);z-index:300;transform:translateX(100%);transition:transform .3s ease;overflow-y:auto;display:flex;flex-direction:column}
+#side-panel::-webkit-scrollbar{width:3px}#side-panel::-webkit-scrollbar-thumb{background:var(--border)}
+#side-panel.open{transform:translateX(0)}
+.sp-header{padding:.8rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.5rem}
+.sp-title{font-family:'Uncial Antiqua',serif;font-size:.95rem;color:var(--gold-light);letter-spacing:1px;flex:1}
+.sp-close{background:none;border:none;color:var(--parch-dim);font-size:1.1rem;cursor:pointer;padding:.2rem}
+.sp-close:hover{color:var(--parch)}
+.sp-body{padding:.9rem 1rem;flex:1}
+.sp-section{margin-bottom:.9rem}
+.sp-sec-title{font-size:.6rem;letter-spacing:2px;text-transform:uppercase;color:var(--parch-dim);margin-bottom:.4rem;padding-bottom:.25rem;border-bottom:1px solid rgba(200,150,12,.1)}
+.sp-stat-row{display:flex;justify-content:space-between;font-size:.78rem;padding:.18rem 0;border-bottom:1px solid rgba(200,150,12,.04)}
+.sp-stat-row span:last-child{color:var(--parch-light);font-weight:600}
+.sp-btn{width:100%;padding:.38rem;font-family:'Uncial Antiqua',serif;font-size:.72rem;letter-spacing:1px;border-radius:3px;cursor:pointer;transition:all .2s;margin-bottom:.35rem}
+.sp-btn-gold{background:rgba(200,150,12,.1);border:1px solid rgba(200,150,12,.4);color:var(--gold)}
+.sp-btn-gold:hover{background:rgba(200,150,12,.22)}
+.sp-btn-red{background:rgba(139,26,26,.1);border:1px solid rgba(139,26,26,.5);color:var(--blood-bright)}
+.sp-btn-red:hover{background:rgba(139,26,26,.22)}
+.sp-btn-green{background:rgba(74,122,53,.1);border:1px solid rgba(106,170,80,.4);color:var(--moss-light)}
+.sp-btn-green:hover{background:rgba(74,122,53,.22)}
+.sp-btn-purple{background:rgba(142,68,173,.1);border:1px solid rgba(142,68,173,.4);color:#c070e0}
+.sp-btn-purple:hover{background:rgba(142,68,173,.22)}
+.rep-badge{display:inline-flex;align-items:center;gap:.3rem;padding:.18rem .5rem;border-radius:10px;font-size:.68rem}
+.rep-hostile{background:rgba(139,26,26,.2);border:1px solid rgba(231,76,60,.4);color:var(--blood-bright)}
+.rep-neutral{background:rgba(200,150,12,.12);border:1px solid rgba(200,150,12,.4);color:var(--gold)}
+.rep-ally{background:rgba(74,122,53,.15);border:1px solid rgba(106,170,80,.4);color:var(--moss-light)}
+.rep-wary{background:rgba(90,138,176,.12);border:1px solid rgba(90,138,176,.4);color:var(--frost)}
+
+/* EVENTS OVERLAY */
+#events-log{position:absolute;left:10px;top:10px;z-index:150;max-width:220px;pointer-events:none}
+.ev-line{background:rgba(8,5,1,.92);border:1px solid var(--border);border-radius:3px;padding:.3rem .6rem;font-size:.7rem;color:var(--parch);margin-bottom:.3rem;animation:evIn .3s ease,evOut .3s ease 4s forwards}
+.ev-line.hostile{border-color:rgba(231,76,60,.5);color:var(--blood-bright)}
+.ev-line.divine{border-color:rgba(142,68,173,.5);color:#c070e0}
+.ev-line.good{border-color:rgba(106,170,80,.5);color:var(--moss-light)}
+@keyframes evIn{from{opacity:0;transform:translateX(-15px)}}
+@keyframes evOut{to{opacity:0;transform:translateX(-15px)}}
+
+/* WEATHER OVERLAY */
+#weather-overlay{position:absolute;inset:0;pointer-events:none;z-index:20;overflow:hidden}
+.weather-particle{position:absolute;pointer-events:none;animation:weatherFall linear infinite}
+@keyframes weatherFall{from{transform:translateY(-20px)}to{transform:translateY(100vh)}}
+
+/* ZOOM CONTROLS */
+#zoom-ctrl{position:absolute;bottom:65px;left:10px;z-index:150;display:flex;flex-direction:column;gap:.3rem}
+.zoom-btn{width:30px;height:30px;background:rgba(8,5,1,.92);border:1px solid var(--border);color:var(--parch);font-size:1rem;cursor:pointer;border-radius:4px;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.zoom-btn:hover{border-color:var(--gold);color:var(--gold)}
+
+/* KINGDOM LEGEND */
+#kingdom-legend{position:absolute;top:10px;right:10px;z-index:150;background:rgba(8,5,1,.92);border:1px solid var(--border);border-radius:4px;padding:.5rem .7rem;font-size:.65rem;color:var(--parch-dim)}
+#kingdom-legend.hidden{display:none}
+.kl-row{display:flex;align-items:center;gap:.4rem;margin-bottom:.22rem}
+.kl-dot{width:8px;height:8px;border-radius:50%}
+
+/* SPY ANIMATION */
+.spy-anim{position:fixed;z-index:600;font-size:1.5rem;animation:spyMove 2s ease-in-out forwards;pointer-events:none}
+@keyframes spyMove{0%{opacity:0;transform:scale(.5)}20%{opacity:1;transform:scale(1)}80%{opacity:1}100%{opacity:0;transform:scale(.5) translateY(-40px)}}
+
+/* TOAST */
+#toasts{position:fixed;bottom:55px;right:10px;z-index:9999;display:flex;flex-direction:column;gap:.3rem;pointer-events:none}
+.toast{background:rgba(8,5,1,.97);border:1px solid var(--gold);border-radius:3px;padding:.4rem .8rem;font-size:.78rem;color:var(--parch-light);box-shadow:0 4px 20px rgba(0,0,0,.7);animation:tIn .3s cubic-bezier(.34,1.56,.64,1),tOut .3s ease 3.5s forwards;max-width:260px}
+.toast.s{border-color:var(--moss-light)}.toast.d{border-color:var(--blood-bright)}.toast.divine{border-color:#c070e0}.toast.info{border-color:var(--frost)}
+@keyframes tIn{from{opacity:0;transform:translateX(25px)}}
+@keyframes tOut{to{opacity:0;transform:translateX(25px)}}
 </style>
 </head>
 <body>
 
-<!-- FOND ANIMÉ -->
-<div id="sky"></div>
-<div id="weather-overlay"></div>
-
-<!-- ═══════════ TOPBAR ═══════════ -->
 <div id="topbar">
-  <div class="game-logo">YGGDRASIL<span>⁂ les neuf royaumes ⁂</span></div>
-
-  <div class="topbar-divider"></div>
-
-  <!-- Ressources normales -->
-  <div class="res-group">
-    <div class="res-chip" title="Bois">
-      <span class="icon">🪵</span>
-      <span class="val" id="r-wood">480</span>
-      <span class="rate">+6/t</span>
-    </div>
-    <div class="res-chip" title="Pierre">
-      <span class="icon">🪨</span>
-      <span class="val" id="r-stone">320</span>
-      <span class="rate">+4/t</span>
-    </div>
-    <div class="res-chip" title="Nourriture">
-      <span class="icon">🌾</span>
-      <span class="val" id="r-food">610</span>
-      <span class="rate">+8/t</span>
-    </div>
-    <div class="res-chip" title="Or">
-      <span class="icon">🪙</span>
-      <span class="val" id="r-gold">145</span>
-      <span class="rate">+2/t</span>
-    </div>
+  <a class="logo" href="#">YGGDRASIL<span>⁂ carte ⁂</span></a>
+  <div class="sep"></div>
+  <div style="display:flex;gap:.28rem;flex-wrap:wrap" id="res-bar">
+    <div class="res"><span>🪵</span><span class="v" id="r-wood">480</span></div>
+    <div class="res"><span>🪨</span><span class="v" id="r-stone">320</span></div>
+    <div class="res"><span>🌾</span><span class="v" id="r-food">610</span></div>
+    <div class="res"><span>🪙</span><span class="v" id="r-gold">145</span></div>
+    <div class="res rare"><span>ᚱ</span><span class="v" id="r-runes">12</span></div>
+    <div class="res rare"><span>🍺</span><span class="v" id="r-mead">28</span></div>
   </div>
-
-  <div class="topbar-divider"></div>
-
-  <!-- Ressources rares -->
-  <div class="res-group">
-    <div class="res-chip rare" title="Runes — ressource mystique">
-      <span class="icon">ᚱ</span>
-      <span class="val" id="r-runes">12</span>
-    </div>
-    <div class="res-chip rare" title="Âmes — offrandes aux dieux">
-      <span class="icon">☠</span>
-      <span class="val" id="r-souls">3</span>
-    </div>
-    <div class="res-chip rare" title="Hydromel sacré">
-      <span class="icon">🍺</span>
-      <span class="val" id="r-mead">28</span>
-    </div>
-  </div>
-
-  <!-- Météo & Saison -->
-  <div class="weather-block">
-    <div class="season-icon" id="season-icon">☀️</div>
-    <div class="season-info">
-      <div class="season-name" id="season-name">Été</div>
-      <div class="weather-desc" id="weather-desc">Ciel dégagé, raids favorables</div>
-    </div>
-    <div>
-      <div class="day-counter">Jour <span id="day-num">14</span> / 49</div>
-      <div class="cycle-bar">
-        <div class="cycle-fill" id="cycle-fill" style="width:28%;background:#d4a017;"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Joueur -->
-  <div class="player-chip">
-    <div class="role-dot role-jarl"></div>
-    <span id="player-name">Ragnar</span>
-    <span style="color:var(--parch-dark);font-size:0.7rem;">· Jarl</span>
+  <div class="sep"></div>
+  <div class="season-chip" id="season-chip">🍂 Automne · Jour <span id="day-num">34</span></div>
+  <div class="nav-links">
+    <a class="nav-link active" href="#">🗺 Carte</a>
+    <a class="nav-link" href="yggdrasil-village.html">🏘 Village</a>
+    <a class="nav-link" href="yggdrasil-armee.html">⚔ Armée</a>
+    <a class="nav-link" href="yggdrasil-alliance.html">🤝 Alliance</a>
+    <a class="nav-link" href="yggdrasil-quetes.html">📜 Quêtes</a>
   </div>
 </div>
 
-<!-- ═══════════ CARTE ═══════════ -->
-<div id="map-container">
-  <div id="map-wrap">
-    <div id="map-grid"></div>
+<div id="map-wrap">
+  <div id="map-container">
+    <div id="map-canvas-wrap">
+      <div id="map-grid"></div>
+    </div>
+    <div id="weather-overlay"></div>
+  </div>
+
+  <!-- MINIMAP -->
+  <div id="minimap-wrap">
+    <label>Mini-carte</label>
+    <div id="minimap"><div id="mm-viewport"></div></div>
+  </div>
+
+  <!-- ZOOM -->
+  <div id="zoom-ctrl">
+    <button class="zoom-btn" onclick="zoom(1)">+</button>
+    <button class="zoom-btn" onclick="zoom(-1)">−</button>
+  </div>
+
+  <!-- EVENTS LOG -->
+  <div id="events-log"></div>
+
+  <!-- KINGDOM LEGEND -->
+  <div id="kingdom-legend">
+    <div style="font-size:.6rem;letter-spacing:1px;color:var(--parch-dim);margin-bottom:.3rem;text-transform:uppercase">Royaumes</div>
+    <div class="kl-row"><div class="kl-dot" style="background:#4a7a35"></div><span>Midgard</span></div>
+    <div class="kl-row"><div class="kl-dot" style="background:#3a5a7a"></div><span>Jötunheim 🔒</span></div>
+    <div class="kl-row"><div class="kl-dot" style="background:#3a1a4a"></div><span>Niflheim 🔒</span></div>
+    <div class="kl-row"><div class="kl-dot" style="background:#7a5a1a"></div><span>Muspelheim 🔒</span></div>
+  </div>
+
+  <!-- RADIAL MENU -->
+  <div id="radial-menu"></div>
+
+  <!-- SIDE PANEL -->
+  <div id="side-panel">
+    <div class="sp-header">
+      <div class="sp-title" id="sp-title">Case</div>
+      <button class="sp-close" onclick="closeSidePanel()">✕</button>
+    </div>
+    <div class="sp-body" id="sp-body"></div>
+  </div>
+
+  <!-- BOTTOM BAR -->
+  <div id="bottombar">
+    <div id="day-counter">Jour 34</div>
+    <div class="sep"></div>
+    <div class="bb-item">⚔ Moral <div class="moral-bar-bg"><div class="moral-bar" id="moral-bar" style="width:75%;background:#6aaa50"></div></div> <b id="moral-val">75</b></div>
+    <div class="sep"></div>
+    <div class="bb-item">⭐ Gloire : <b id="glory-val">1240</b></div>
+    <div class="sep"></div>
+    <div class="bb-item" id="bb-season">🍂 Automne · Production ×2 · 🍄 Tempêtes</div>
+    <div style="margin-left:auto;display:flex;gap:.4rem">
+      <button class="zoom-btn" style="width:auto;padding:.1rem .6rem;font-size:.62rem;font-family:'Uncial Antiqua',serif" onclick="toggleLegend()">🗝 Légende</button>
+      <button class="zoom-btn" style="width:auto;padding:.1rem .6rem;font-size:.62rem;font-family:'Uncial Antiqua',serif" onclick="centerOnVillage()">🏰 Centrer</button>
+    </div>
   </div>
 </div>
 
-<!-- ═══════════ MENU RADIAL ═══════════ -->
-<div id="radial-menu">
-  <div class="radial-center" id="radial-center"></div>
-</div>
-
-<!-- ═══════════ PANNEAU VILLAGE ═══════════ -->
-<div id="village-panel">
-  <div class="panel-header">
-    <div class="panel-icon" id="vp-icon">🏰</div>
-    <div class="panel-title-block">
-      <div class="panel-title" id="vp-title">Village de Ragnar</div>
-      <div class="panel-subtitle" id="vp-subtitle">Midgard · Village allié</div>
-    </div>
-    <button class="panel-close" onclick="closeVillagePanel()">✕</button>
-  </div>
-  <div class="panel-body">
-    <div class="panel-section">
-      <div class="panel-section-title">⚔ Gloire de l'alliance</div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem;">
-        <span style="font-size:0.8rem;color:var(--gold);" id="vp-glory">1 240 pts</span>
-        <span style="font-size:0.7rem;color:var(--parch-dark);">Valhalla : 10 000</span>
-      </div>
-      <div class="glory-bar-wrap">
-        <div class="glory-bar" id="vp-glory-bar" style="width:12.4%"></div>
-      </div>
-    </div>
-
-    <div class="panel-section">
-      <div class="panel-section-title">📊 Statistiques</div>
-      <div class="stats-grid">
-        <div class="stat-item">
-          <div class="stat-label">Population</div>
-          <div class="stat-val" id="vp-pop">248</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-label">Troupes</div>
-          <div class="stat-val" id="vp-troops">43</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-label">Défense</div>
-          <div class="stat-val" id="vp-def">186</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-label">Stade</div>
-          <div class="stat-val" id="vp-stage">2 / 5</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="panel-section">
-      <div class="panel-section-title">🏗 Bâtiments principaux</div>
-      <div class="building-list" id="vp-buildings">
-        <div class="bld-row"><span class="bld-icon">🌾</span><span class="bld-name">Ferme</span><span class="bld-lvl">Niv. 3</span></div>
-        <div class="bld-row"><span class="bld-icon">🪵</span><span class="bld-name">Scierie</span><span class="bld-lvl">Niv. 2</span></div>
-        <div class="bld-row"><span class="bld-icon">🏟</span><span class="bld-name">Caserne</span><span class="bld-lvl">Niv. 2</span></div>
-        <div class="bld-row"><span class="bld-icon">🧱</span><span class="bld-name">Remparts</span><span class="bld-lvl">Niv. 1</span></div>
-      </div>
-    </div>
-
-    <button class="panel-action-btn" onclick="toast('🏘 Module Village — prochain sprint !')">
-      ⚒ Gérer le Village →
-    </button>
-  </div>
-</div>
-
-<!-- ═══════════ INFO CASE ═══════════ -->
-<div id="cell-info">
-  <div class="cell-info-name" id="ci-name">Plaine fertile</div>
-  <div class="cell-info-desc" id="ci-desc">Terres douces de Midgard, idéales pour l'agriculture.</div>
-  <div class="cell-info-effects" id="ci-effects"></div>
-</div>
-
-<!-- ═══════════ ÉVÉNEMENTS ═══════════ -->
-<div id="event-overlay"></div>
-
-<!-- ═══════════ CONTRÔLES ZOOM ═══════════ -->
-<div id="zoom-controls">
-  <button class="zoom-btn" onclick="zoomIn()" title="Zoom +">＋</button>
-  <button class="zoom-btn" onclick="zoomOut()" title="Zoom −">－</button>
-  <button class="zoom-btn" onclick="resetView()" title="Centrer">⌖</button>
-</div>
-
-<!-- ═══════════ MINIMAP ═══════════ -->
-<div id="minimap">
-  <div class="minimap-label">Carte</div>
-  <canvas id="minimap-canvas" width="120" height="120"></canvas>
-</div>
-
-<!-- ═══════════ LÉGENDE ═══════════ -->
-<div id="legend">
-  <div class="legend-item"><div class="legend-dot" style="background:#4a6a28"></div>Plaine</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#1e3510"></div>Forêt</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#4a3a2a"></div>Montagne</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#1a4a6a"></div>Eau</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#8ab4c8"></div>Toundra</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#0d0a05"></div>Brouillard</div>
-  <div class="legend-item"><div class="legend-dot" style="background:rgba(100,200,80,0.5);border:1px solid rgba(100,200,80,0.8)"></div>Allié</div>
-  <div class="legend-item"><div class="legend-dot" style="background:rgba(200,60,40,0.5);border:1px solid rgba(200,60,40,0.8)"></div>Ennemi</div>
-</div>
+<div id="toasts"></div>
 
 <script>
-// ═══════════════════════════════════════════
-//  DONNÉES DE JEU
-// ═══════════════════════════════════════════
-const GRID_SIZE = 17;
-const TOTAL_CELLS = GRID_SIZE * GRID_SIZE;
+// ═══════════════════════════════════════════════
+//  CONSTANTES
+// ═══════════════════════════════════════════════
+const GRID=17,CELL=44,GAP=2,PAD=8;
 
-// Saisons
-const SEASONS = [
-  {
-    id:'spring', name:'Printemps', icon:'🌸',
-    skyGrad: 'linear-gradient(180deg,#a8d8ea 0%,#c8e6c2 100%)',
-    cycleColor:'#6ab04c',
-    weathers:[
-      { desc:'Rosée matinale, champs en fleur',     effect:'🌿 Production +30%',  type:'clear'  },
-      { desc:'Pluie douce, routes un peu boueuses', effect:'🛤 Trajets +10%',      type:'rain'   },
-      { desc:'Draugr attardés dans les marais',     effect:'💀 Créatures actives', type:'eerie'  },
-    ]
-  },
-  {
-    id:'summer', name:'Été', icon:'☀️',
-    skyGrad: 'linear-gradient(180deg,#2980b9 0%,#74b9e0 60%,#f0e68c 100%)',
-    cycleColor:'#d4a017',
-    weathers:[
-      { desc:'Ciel dégagé, raids favorables',       effect:'⚔ Raids +20%',        type:'clear'  },
-      { desc:'Chaleur accablante, soldats fatigués', effect:'🌡 Recrutement +15%',  type:'hot'    },
-      { desc:'Sécheresse — puits à surveiller',     effect:'🌾 Nourriture -20%',   type:'drought'},
-    ]
-  },
-  {
-    id:'autumn', name:'Automne', icon:'🍂',
-    skyGrad: 'linear-gradient(180deg,#6d4c41 0%,#bf8654 40%,#d4a017 100%)',
-    cycleColor:'#bf8654',
-    weathers:[
-      { desc:'Récolte abondante, celliers pleins',  effect:'🌾 Ressources x2',     type:'harvest'},
-      { desc:'Tempête de feuilles, sorts perturbés',effect:'🌪 Sorts bloqués',      type:'storm'  },
-      { desc:'Ombre s\'épaissit, créatures proches',effect:'👁 Créatures rôdent',   type:'eerie'  },
-    ]
-  },
-  {
-    id:'winter', name:'Hiver', icon:'❄️',
-    skyGrad: 'linear-gradient(180deg,#0d1b2a 0%,#1a3a5c 50%,#c8d8e8 100%)',
-    cycleColor:'#7ec8e3',
-    weathers:[
-      { desc:'Neige épaisse, magie amplifiée',      effect:'🔮 Sorts chaman +40%', type:'snow'   },
-      { desc:'Nuit de Sköll — brouillard étendu',   effect:'🌫 Brouillard x2',     type:'fog'    },
-      { desc:'Blizzard — troupes vulnérables',      effect:'❄ Production -50%',    type:'blizzard'},
-    ]
-  },
+const TERRAIN_TYPES=['plain','forest','mountain','water','tundra','swamp','ruins','volcano','crystal'];
+const TERRAIN_ICONS={plain:'🌿',forest:'🌲',mountain:'⛰',water:'🌊',tundra:'🧊',swamp:'🌫',ruins:'🏚',volcano:'🌋',crystal:'💎'};
+const TERRAIN_NAMES={plain:'Plaine',forest:'Forêt',mountain:'Montagne',water:'Eau',tundra:'Toundra',swamp:'Marais',ruins:'Ruines',volcano:'Volcan',crystal:'Cristaux'};
+const TERRAIN_WEIGHTS=[30,22,14,10,8,7,5,2,2];
+const TERRAIN_RES={plain:{food:8,wood:2},forest:{wood:12,food:3},mountain:{stone:10,runes:1},water:{food:6},tundra:{stone:4},swamp:{food:4,wood:4},ruins:{gold:6,runes:2},volcano:{stone:8},crystal:{runes:4,stone:6}};
+
+const KINGDOM_REGIONS={
+  midgard:{color:'rgba(74,122,53,.12)',border:'rgba(74,122,53,.4)',name:'Midgard',unlocked:true},
+  jotunheim:{color:'rgba(58,90,122,.12)',border:'rgba(58,90,122,.4)',name:'Jötunheim',unlocked:false},
+  niflheim:{color:'rgba(58,26,74,.12)',border:'rgba(58,26,74,.4)',name:'Niflheim',unlocked:false},
+  muspelheim:{color:'rgba(122,90,26,.12)',border:'rgba(122,90,26,.4)',name:'Muspelheim',unlocked:false},
+};
+
+const AI_CLANS=[
+  {id:'ulf',name:'Clan Ulfhéðnar',icon:'🐺',rep:'hostile',strength:65,x:13,y:3,wealth:200,growing:true},
+  {id:'hel',name:'Guerriers de Hel',icon:'💀',rep:'hostile',strength:80,x:15,y:8,wealth:350,growing:false},
+  {id:'bjorn',name:'Clan Björnsen',icon:'🐻',rep:'neutral',strength:40,x:2,y:2,wealth:150,growing:true},
+  {id:'sol',name:'Alliance Sólveig',icon:'☀',rep:'ally',strength:55,x:4,y:14,wealth:280,growing:true},
+  {id:'raven',name:'Clan du Corbeau',icon:'🦅',rep:'wary',strength:45,x:10,y:15,wealth:180,growing:false},
 ];
 
-// Types de terrain
-const TERRAINS = {
-  fog:      { name:'Brouillard de guerre', desc:'Zone inexplorée, dangereuse et inconnue.',                          icon:'',   bg:'cell-fog'      },
-  plains:   { name:'Plaine fertile',       desc:'Terres douces de Midgard, idéales pour l\'agriculture.',           icon:'🌿', bg:'cell-plains'   },
-  forest:   { name:'Forêt ancienne',       desc:'Arbres millénaires où se cachent créatures et secrets runiques.',  icon:'🌲', bg:'cell-forest'   },
-  mountain: { name:'Montagne glacée',      desc:'Pics escarpés riches en minerai, difficiles à traverser.',         icon:'⛰', bg:'cell-mountain' },
-  water:    { name:'Lac sacré',            desc:'Eaux sombres reliées à Niflheim, source de Runes rares.',          icon:'🌊', bg:'cell-water'    },
-  tundra:   { name:'Toundra nordique',     desc:'Terres gelées à la frontière de Jötunheim.',                       icon:'🏔', bg:'cell-tundra'   },
-  swamp:    { name:'Marais des morts',     desc:'Terres maudites où errent les Draugr. Évitez la nuit.',            icon:'🌿', bg:'cell-swamp'    },
-  ruins:    { name:'Ruines oubliées',      desc:'Restes d\'un clan défait. Artefacts et dangers s\'y côtoient.',    icon:'🏚', bg:'cell-ruins'    },
+const EVENT_TYPES=[
+  {id:'raid_incoming',icon:'⚔',label:'Raid ennemi !',cls:'hostile',prob:.04},
+  {id:'resource_node',icon:'💰',label:'Ressources découvertes',cls:'good',prob:.06},
+  {id:'merchant',icon:'🧑‍💼',label:'Marchand de passage',cls:''},
+  {id:'storm',icon:'⛈',label:'Tempête !',cls:'hostile',prob:.03},
+  {id:'divine_sign',icon:'🦅',label:'Signe divin',cls:'divine',prob:.01},
+  {id:'ruins_found',icon:'🏚',label:'Ruines découvertes',cls:'good',prob:.02},
+  {id:'clan_war',icon:'💥',label:'Guerre de clans !',cls:'hostile',prob:.02},
+  {id:'alliance_request',icon:'🤝',label:'Demande d\'alliance',cls:'good',prob:.015},
+];
+
+const SEASONS=[
+  {key:'spring',label:'Printemps',icon:'🌱',color:'#6aaa50',prod:1.3,desc:'Production +30% · 🌊 Routes inondées'},
+  {key:'summer',label:'Été',icon:'☀',color:'#f0c040',prod:1.1,desc:'Recrutement accéléré · 🔥 IA ultra-agressive'},
+  {key:'autumn',label:'Automne',icon:'🍂',color:'#c8640c',prod:2.0,desc:'Récolte ×2 · 🍄 Tempêtes · Provisions urgentes'},
+  {key:'winter',label:'Hiver',icon:'❄',color:'#5a8ab0',prod:0.5,desc:'Production −50% · ✨ Magie amplifiée'},
+];
+
+const RES_ICONS={food:'🌾',wood:'🪵',stone:'🪨',gold:'🪙',runes:'ᚱ',mead:'🍺',souls:'☠'};
+
+// ═══════════════════════════════════════════════
+//  ÉTAT
+// ═══════════════════════════════════════════════
+const G={
+  resources:{wood:480,stone:320,food:610,gold:145,runes:12,mead:28,souls:3},
+  glory:1240,moral:75,day:34,seasonIdx:2,tick:0,
+  scale:1,panX:0,panY:0,isPanning:false,panStart:{x:0,y:0},
+  grid:[],explored:new Set(),partial:new Set(),
+  events:{},aiWars:{},spyActive:false,
+  playerCell:{x:8,y:8},
+  selectedCell:null,
 };
 
-// Actions radiales par type de case
-const RADIAL_ACTIONS = {
-  village_ally:  [
-    { icon:'🏘', label:'Gérer',    angle: 270, action: 'openVillagePanel' },
-    { icon:'⚔',  label:'Troupes',  angle: 330, action: 'showTroops'       },
-    { icon:'🛡',  label:'Défense',  angle: 30,  action: 'showDefense'      },
-    { icon:'📜',  label:'Quêtes',   angle: 90,  action: 'showQuests'       },
-  ],
-  village_enemy: [
-    { icon:'⚔',  label:'Attaquer', angle: 270, action: 'attackVillage'    },
-    { icon:'🕵',  label:'Espionner',angle: 330, action: 'spyVillage'       },
-    { icon:'📜',  label:'Infos',    angle: 30,  action: 'showEnemyInfo'    },
-  ],
-  plains:   [
-    { icon:'⛺', label:'Camper',    angle: 270, action: 'camp'             },
-    { icon:'🔍', label:'Explorer',  angle: 330, action: 'explore'          },
-    { icon:'🌾', label:'Récolter',  angle: 30,  action: 'harvest'          },
-  ],
-  forest:   [
-    { icon:'🪵', label:'Couper',    angle: 270, action: 'chop'             },
-    { icon:'🔍', label:'Explorer',  angle: 330, action: 'explore'          },
-    { icon:'🏹', label:'Chasser',   angle: 30,  action: 'hunt'             },
-  ],
-  mountain: [
-    { icon:'⛏',  label:'Miner',    angle: 270, action: 'mine'             },
-    { icon:'🔍', label:'Escalader', angle: 330, action: 'explore'          },
-  ],
-  water:    [
-    { icon:'🎣', label:'Pêcher',    angle: 270, action: 'fish'             },
-    { icon:'ᚱ',  label:'Runes',     angle: 330, action: 'runes'            },
-  ],
-  ruins:    [
-    { icon:'🔍', label:'Fouiller',  angle: 270, action: 'loot'             },
-    { icon:'⚔',  label:'Purger',    angle: 330, action: 'cleanse'          },
-  ],
-  default:  [
-    { icon:'🔍', label:'Explorer',  angle: 300, action: 'explore'          },
-  ],
-};
-
-// État du jeu
-const gameState = {
-  season: 1,       // 0-3 (printemps=0)
-  dayInSeason: 14,
-  totalDays: 49,
-  weatherIdx: 0,
-  resources: { wood:480, stone:320, food:610, gold:145, runes:12, souls:3, mead:28 },
-  cells: [],        // généré ci-dessous
-  exploredSet: new Set(),
-  tick: 0,
-};
-
-// ═══════════════════════════════════════════
-//  GÉNÉRATION DE LA CARTE
-// ═══════════════════════════════════════════
-function generateMap() {
-  const cells = [];
-  // Graine pseudo-aléatoire déterministe
-  let seed = 42;
-  function rng() { seed = (seed * 1664525 + 1013904223) & 0xffffffff; return (seed >>> 0) / 0xffffffff; }
-
-  const typeWeights = [
-    {t:'plains',   w:28},
-    {t:'forest',   w:22},
-    {t:'mountain', w:14},
-    {t:'water',    w:10},
-    {t:'tundra',   w:10},
-    {t:'swamp',    w:8 },
-    {t:'ruins',    w:8 },
-  ];
-  const totalW = typeWeights.reduce((s,x)=>s+x.w,0);
-
-  function pickTerrain(r) {
-    let acc=0; const v=r*totalW;
-    for(const {t,w} of typeWeights){ acc+=w; if(v<acc) return t; }
-    return 'plains';
-  }
-
-  for(let i=0; i<TOTAL_CELLS; i++) {
-    const row = Math.floor(i/GRID_SIZE);
-    const col = i % GRID_SIZE;
-    let type = pickTerrain(rng());
-
-    // Village allié au centre
-    const cx=8, cy=8;
-    if(row===cy && col===cx) type='village_ally';
-
-    // Villages ennemis
-    if(row===3 && col===13) type='village_enemy';
-    if(row===13 && col===3) type='village_enemy';
-    if(row===5  && col===2) type='village_enemy';
-
-    // Événements visuels (traces météo)
-    let event = null;
-    if(rng()<0.06) event = ['⚡','💀','🔥','❄','🌊'][Math.floor(rng()*5)];
-
-    // Ressource bonus
-    let bonus = null;
-    if(rng()<0.12 && type!=='fog' && type!=='village_ally' && type!=='village_enemy') {
-      bonus = ['🪵','🪨','🌾','🪙','ᚱ'][Math.floor(rng()*5)];
-    }
-
-    cells.push({ idx:i, row, col, type, event, bonus, explored: false });
-  }
-
-  // Zone explorée initiale : 5x5 autour du village
-  for(let i=0;i<TOTAL_CELLS;i++){
-    const {row,col} = cells[i];
-    if(Math.abs(row-8)<=2 && Math.abs(col-8)<=2) {
-      cells[i].explored = true;
-      gameState.exploredSet.add(i);
-    }
-  }
-
-  return cells;
+// ═══════════════════════════════════════════════
+//  GÉNÉRATION CARTE
+// ═══════════════════════════════════════════════
+function weightedRandom(weights){
+  const total=weights.reduce((a,b)=>a+b,0);
+  let r=Math.random()*total;
+  for(let i=0;i<weights.length;i++){r-=weights[i];if(r<=0)return i;}
+  return weights.length-1;
 }
 
-// ═══════════════════════════════════════════
-//  RENDU DE LA GRILLE
-// ═══════════════════════════════════════════
-function renderGrid() {
-  const grid = document.getElementById('map-grid');
-  grid.innerHTML = '';
+function getKingdom(x,y){
+  if(x<10&&y<10)return'midgard';
+  if(x>=10&&y<9)return'jotunheim';
+  if(x<6&&y>=12)return'niflheim';
+  return'muspelheim';
+}
 
-  gameState.cells.forEach((cell, i) => {
-    const el = document.createElement('div');
-    el.dataset.idx = i;
-
-    if(!cell.explored) {
-      el.className = 'cell cell-fog';
-      el.addEventListener('click', (e) => onCellClick(e, i));
-      grid.appendChild(el);
-      return;
+function generateGrid(){
+  const grid=[];
+  for(let y=0;y<GRID;y++){
+    const row=[];
+    for(let x=0;x<GRID;x++){
+      const terrain=TERRAIN_TYPES[weightedRandom(TERRAIN_WEIGHTS)];
+      const kingdom=getKingdom(x,y);
+      const cell={x,y,terrain,kingdom,
+        event:null,aiClan:null,resource:null,
+        traces:[],explored:false,
+        isPlayerVillage:x===8&&y===8,
+        isAllyVillage:x===5&&y===11,
+        isDungeon:false,isRuins:false,
+      };
+      // Forcer terrain logique
+      if(x===8&&y===8){cell.terrain='plain';cell.isPlayerVillage=true}
+      if(x===5&&y===11){cell.terrain='plain';cell.isAllyVillage=true}
+      // Donjons rares
+      if(Math.random()<.04&&terrain==='ruins')cell.isDungeon=true;
+      // Ressources spéciales
+      if(Math.random()<.08)cell.resource={type:['runes','gold','mead','souls'][Math.floor(Math.random()*4)],amount:Math.floor(Math.random()*10)+5,depleted:false};
+      row.push(cell);
     }
-
-    const terr = TERRAINS[cell.type] || TERRAINS.plains;
-    el.className = `cell ${terr.bg}`;
-
-    if(cell.type === 'village_ally')  el.classList.add('cell-village-ally');
-    if(cell.type === 'village_enemy') el.classList.add('cell-village-enemy');
-
-    // Bordures royaume (exemple Jötunheim au nord)
-    if(cell.row <= 3) el.classList.add('cell-border-top');
-
-    // Icône principale
-    if(terr.icon) {
-      const icon = document.createElement('div');
-      icon.className = 'cell-icon';
-      icon.textContent = cell.type === 'village_ally'  ? '🏰' :
-                         cell.type === 'village_enemy' ? '💀' : terr.icon;
-      el.appendChild(icon);
-    }
-
-    // Badge ressource
-    if(cell.bonus) {
-      const badge = document.createElement('div');
-      badge.className = 'cell-badge';
-      badge.textContent = cell.bonus;
-      el.appendChild(badge);
-    }
-
-    // Trace d'événement météo
-    if(cell.event) {
-      const ev = document.createElement('div');
-      ev.className = 'cell-event';
-      ev.textContent = cell.event;
-      el.appendChild(ev);
-    }
-
-    el.addEventListener('click', (e) => onCellClick(e, i));
-    el.addEventListener('mouseenter', () => showCellInfo(i));
-    el.addEventListener('mouseleave', hideCellInfo);
-
-    grid.appendChild(el);
+    grid.push(row);
+  }
+  // Placer les clans IA
+  AI_CLANS.forEach(clan=>{
+    if(clan.x<GRID&&clan.y<GRID)grid[clan.y][clan.x].aiClan=clan.id;
   });
+  // Quelques événements aléatoires initiaux
+  for(let i=0;i<8;i++){
+    const x=Math.floor(Math.random()*GRID),y=Math.floor(Math.random()*GRID);
+    const ev=EVENT_TYPES[Math.floor(Math.random()*4)];
+    grid[y][x].event=ev.id;
+  }
+  return grid;
+}
 
+function exploreAround(cx,cy,radius=1){
+  for(let dy=-radius;dy<=radius;dy++){
+    for(let dx=-radius;dx<=radius;dx++){
+      const nx=cx+dx,ny=cy+dy;
+      if(nx<0||ny<0||nx>=GRID||ny>=GRID)continue;
+      const key=`${nx},${ny}`;
+      G.explored.add(key);
+      G.partial.delete(key);
+      // Partiellement visible au-delà
+      if(Math.abs(dx)===radius||Math.abs(dy)===radius){
+        for(let ody=-1;ody<=1;ody++){
+          for(let odx=-1;odx<=1;odx++){
+            const ox=nx+odx,oy=ny+ody;
+            if(ox<0||oy<0||ox>=GRID||oy>=GRID)continue;
+            const ok=`${ox},${oy}`;
+            if(!G.explored.has(ok))G.partial.add(ok);
+          }
+        }
+      }
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  RENDU GRILLE
+// ═══════════════════════════════════════════════
+function renderGrid(){
+  const container=document.getElementById('map-grid');
+  container.innerHTML='';
+  for(let y=0;y<GRID;y++){
+    for(let x=0;x<GRID;x++){
+      const cell=G.grid[y][x];
+      const key=`${x},${y}`;
+      const explored=G.explored.has(key);
+      const partial=G.partial.has(key);
+      const el=document.createElement('div');
+      el.className=`cell t-${cell.terrain}`;
+      el.id=`cell-${x}-${y}`;
+      if(!explored&&!partial){
+        el.classList.add('fog');
+      } else {
+        if(partial)el.classList.add('partial-fog');
+        // Kingdom border tint
+        const kg=KINGDOM_REGIONS[cell.kingdom];
+        el.style.boxShadow=`inset 0 0 0 2px ${kg.border}`;
+        // Icône terrain
+        let inner='';
+        if(cell.isPlayerVillage){inner='🏰';el.title='Votre Village'}
+        else if(cell.isAllyVillage){inner='🤝';el.title='Village Allié'}
+        else if(cell.aiClan){
+          const clan=AI_CLANS.find(c=>c.id===cell.aiClan);
+          inner=`<div class="ai-clan-marker ${clan?.rep||'neutral'}">${clan?.icon||'🏴'}</div>`;
+        }
+        else if(cell.isDungeon){inner='🏛';el.title='Donjon'}
+        else inner=TERRAIN_ICONS[cell.terrain]||'';
+        // Event indicator
+        if(cell.event){
+          const ev=EVENT_TYPES.find(e=>e.id===cell.event);
+          inner+=`<div class="cell-event">${ev?.icon||'!'}</div>`;
+        }
+        // Resource indicator
+        if(cell.resource&&!cell.resource.depleted){
+          inner+=`<div class="cell-mark">${RES_ICONS[cell.resource.type]||'💫'}</div>`;
+        }
+        // Traces
+        if(cell.traces&&cell.traces.length>0){
+          el.style.outline=`1px dashed ${cell.traces[0]==='battle'?'rgba(231,76,60,.5)':'rgba(200,150,12,.4)'}`;
+        }
+        el.innerHTML=inner;
+        el.addEventListener('click',()=>onCellClick(x,y,el));
+        el.addEventListener('contextmenu',e=>{e.preventDefault();onCellRightClick(x,y,e)});
+      }
+      container.appendChild(el);
+    }
+  }
   renderMinimap();
 }
 
-// ═══════════════════════════════════════════
-//  INTERACTIONS
-// ═══════════════════════════════════════════
-let radialTarget = null;
+function renderCell(x,y){
+  const el=document.getElementById(`cell-${x}-${y}`);
+  if(!el)return;
+  const cell=G.grid[y][x];
+  const key=`${x},${y}`;
+  const explored=G.explored.has(key);
+  const partial=G.partial.has(key);
+  el.className=`cell t-${cell.terrain}`;
+  if(!explored&&!partial){el.classList.add('fog');el.innerHTML='';return}
+  if(partial)el.classList.add('partial-fog');
+  const kg=KINGDOM_REGIONS[cell.kingdom];
+  el.style.boxShadow=`inset 0 0 0 2px ${kg.border}`;
+  let inner='';
+  if(cell.isPlayerVillage)inner='🏰';
+  else if(cell.isAllyVillage)inner='🤝';
+  else if(cell.aiClan){const clan=AI_CLANS.find(c=>c.id===cell.aiClan);inner=`<div class="ai-clan-marker ${clan?.rep||'neutral'}">${clan?.icon||'🏴'}</div>`;}
+  else if(cell.isDungeon)inner='🏛';
+  else inner=TERRAIN_ICONS[cell.terrain]||'';
+  if(cell.event){const ev=EVENT_TYPES.find(e=>e.id===cell.event);inner+=`<div class="cell-event">${ev?.icon||'!'}</div>`;}
+  if(cell.resource&&!cell.resource.depleted)inner+=`<div class="cell-mark">${RES_ICONS[cell.resource.type]||'💫'}</div>`;
+  if(cell.traces&&cell.traces.length>0)el.style.outline=`1px dashed ${cell.traces[0]==='battle'?'rgba(231,76,60,.5)':'rgba(200,150,12,.4)'}`;
+  else el.style.outline='';
+  el.innerHTML=inner;
+}
 
-function onCellClick(e, idx) {
-  e.stopPropagation();
-  const cell = gameState.cells[idx];
+// ═══════════════════════════════════════════════
+//  MINIMAP
+// ═══════════════════════════════════════════════
+function renderMinimap(){
+  const mm=document.getElementById('minimap');
+  // Remove old cells but keep viewport
+  [...mm.children].forEach(c=>{if(c.id!=='mm-viewport')c.remove()});
+  const frag=document.createDocumentFragment();
+  for(let y=0;y<GRID;y++){
+    for(let x=0;x<GRID;x++){
+      const d=document.createElement('div');
+      d.className='mm-cell';
+      const key=`${x},${y}`;
+      const cell=G.grid[y][x];
+      if(!G.explored.has(key)&&!G.partial.has(key)){d.style.background='#0c0a08';}
+      else if(cell.isPlayerVillage){d.style.background='#c8960c';}
+      else if(cell.isAllyVillage){d.style.background='#6aaa50';}
+      else if(cell.aiClan){const clan=AI_CLANS.find(c=>c.id===cell.aiClan);d.style.background=clan?.rep==='hostile'?'#e74c3c':clan?.rep==='ally'?'#6aaa50':'#d4a017';}
+      else{const colors={plain:'#2a3a1a',forest:'#1a3a1a',mountain:'#3a3a3a',water:'#0e3860',tundra:'#3a3a4a',swamp:'#253530',ruins:'#3a2010',volcano:'#5a2010',crystal:'#12265a'};d.style.background=colors[cell.terrain]||'#1a1a1a';}
+      if(G.partial.has(key))d.style.opacity='.4';
+      frag.appendChild(d);
+    }
+  }
+  mm.insertBefore(frag,mm.firstChild);
+  updateMinimapViewport();
+}
 
-  // Case dans le brouillard → explorer les adjacentes
-  if(!cell.explored) {
-    exploreAround(idx);
-    toast('🔍 Zone explorée !');
+function updateMinimapViewport(){
+  const vp=document.getElementById('mm-viewport');
+  const mapW=GRID*(CELL+GAP)+PAD*2,mapH=GRID*(CELL+GAP)+PAD*2;
+  const contW=document.getElementById('map-container').offsetWidth;
+  const contH=document.getElementById('map-container').offsetHeight;
+  const visW=contW/G.scale,visH=contH/G.scale;
+  const startX=-G.panX/G.scale,startY=-G.panY/G.scale;
+  const mmScale=136/mapW;
+  vp.style.left=(startX*mmScale)+'px';
+  vp.style.top=(startY*mmScale)+'px';
+  vp.style.width=(visW*mmScale)+'px';
+  vp.style.height=(visH*mmScale)+'px';
+}
+
+// ═══════════════════════════════════════════════
+//  PAN & ZOOM
+// ═══════════════════════════════════════════════
+function applyTransform(){
+  document.getElementById('map-canvas-wrap').style.transform=`translate(${G.panX}px,${G.panY}px) scale(${G.scale})`;
+  updateMinimapViewport();
+}
+
+function zoom(dir){
+  const prev=G.scale;
+  G.scale=Math.max(.45,Math.min(1.6,G.scale+dir*.12));
+  const cont=document.getElementById('map-container');
+  const cx=cont.offsetWidth/2,cy=cont.offsetHeight/2;
+  G.panX=cx-(cx-G.panX)*G.scale/prev;
+  G.panY=cy-(cy-G.panY)*G.scale/prev;
+  applyTransform();
+}
+
+function centerOnVillage(){
+  const cont=document.getElementById('map-container');
+  const cellW=CELL+GAP;
+  const vx=G.playerCell.x*cellW+PAD+CELL/2;
+  const vy=G.playerCell.y*cellW+PAD+CELL/2;
+  G.panX=cont.offsetWidth/2-vx*G.scale;
+  G.panY=cont.offsetHeight/2-vy*G.scale;
+  applyTransform();
+}
+
+(()=>{
+  const mc=document.getElementById('map-container');
+  let startPanX=0,startPanY=0;
+  mc.addEventListener('mousedown',e=>{
+    if(e.target.closest('.cell')||e.button!==0)return;
+    G.isPanning=true;mc.classList.add('panning');
+    startPanX=e.clientX-G.panX;startPanY=e.clientY-G.panY;
+  });
+  mc.addEventListener('mousemove',e=>{
+    if(!G.isPanning)return;
+    G.panX=e.clientX-startPanX;G.panY=e.clientY-startPanY;
+    applyTransform();
+  });
+  mc.addEventListener('mouseup',()=>{G.isPanning=false;mc.classList.remove('panning')});
+  mc.addEventListener('mouseleave',()=>{G.isPanning=false;mc.classList.remove('panning')});
+  mc.addEventListener('wheel',e=>{e.preventDefault();zoom(e.deltaY<0?1:-1)},{passive:false});
+  // Touch
+  let lastTouchDist=0,touchStartX=0,touchStartY=0;
+  mc.addEventListener('touchstart',e=>{
+    if(e.touches.length===2){lastTouchDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);}
+    else{touchStartX=e.touches[0].clientX-G.panX;touchStartY=e.touches[0].clientY-G.panY;}
+  },{passive:true});
+  mc.addEventListener('touchmove',e=>{
+    e.preventDefault();
+    if(e.touches.length===2){
+      const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+      if(lastTouchDist)zoom(d>lastTouchDist?1:-1);lastTouchDist=d;
+    }else{G.panX=e.touches[0].clientX-touchStartX;G.panY=e.touches[0].clientY-touchStartY;applyTransform();}
+  },{passive:false});
+})();
+
+// ═══════════════════════════════════════════════
+//  CLIC CELLULE
+// ═══════════════════════════════════════════════
+function onCellClick(x,y,el){
+  const key=`${x},${y}`;
+  if(!G.explored.has(key)){
+    // Explorer si adjacent
+    const px=G.playerCell.x,py=G.playerCell.y;
+    if(Math.abs(x-px)<=3&&Math.abs(y-py)<=3){
+      exploreAround(x,y,1);renderGrid();
+      addEventLog(`🔭 Zone (${x},${y}) explorée`,'')}
     return;
   }
-
-  openRadialMenu(e.clientX, e.clientY, cell);
+  G.selectedCell={x,y};
+  showRadialMenu(x,y,el);
 }
 
-function exploreAround(idx) {
-  const {row, col} = gameState.cells[idx];
-  for(let dr=-1; dr<=1; dr++) {
-    for(let dc=-1; dc<=1; dc++) {
-      const r2=row+dr, c2=col+dc;
-      if(r2<0||r2>=GRID_SIZE||c2<0||c2>=GRID_SIZE) continue;
-      const ni = r2*GRID_SIZE+c2;
-      gameState.cells[ni].explored = true;
-      gameState.exploredSet.add(ni);
-    }
-  }
-  renderGrid();
+function onCellRightClick(x,y,e){
+  const key=`${x},${y}`;
+  if(!G.explored.has(key))return;
+  showSidePanel(x,y);
 }
 
-function openRadialMenu(x, y, cell) {
+// ═══════════════════════════════════════════════
+//  MENU RADIAL
+// ═══════════════════════════════════════════════
+function showRadialMenu(x,y,el){
   closeRadialMenu();
-  radialTarget = cell;
+  const cell=G.grid[y][x];
+  const rect=el.getBoundingClientRect();
+  const cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
+  const menu=document.getElementById('radial-menu');
+  menu.innerHTML='';
+  menu.classList.add('open');
+  menu.style.left=cx+'px';menu.style.top=cy+'px';
 
-  const menu = document.getElementById('radial-menu');
-  menu.innerHTML = '';
-
+  const actions=getActionsForCell(cell);
+  const radius=55;
   // Centre
-  const center = document.createElement('div');
-  center.className = 'radial-center';
-  center.style.left = x + 'px';
-  center.style.top  = y + 'px';
-  center.textContent = cell.type === 'village_ally'  ? '🏰' :
-                       cell.type === 'village_enemy' ? '💀' :
-                       (TERRAINS[cell.type]?.icon || '🔍');
+  const center=document.createElement('div');
+  center.className='rm-center';center.style.left='0px';center.style.top='0px';
+  center.textContent=cell.isPlayerVillage?'🏰':cell.aiClan?AI_CLANS.find(c=>c.id===cell.aiClan)?.icon||'?':TERRAIN_ICONS[cell.terrain];
+  center.onclick=()=>{showSidePanel(x,y);closeRadialMenu()};
   menu.appendChild(center);
 
-  // Actions selon le type
-  const actions = RADIAL_ACTIONS[cell.type] || RADIAL_ACTIONS.default;
-  const radius = 72;
-
-  actions.forEach(action => {
-    const angle = (action.angle - 90) * (Math.PI / 180);
-    const bx = x + Math.cos(angle) * radius;
-    const by = y + Math.sin(angle) * radius;
-
-    // Ligne
-    const line = document.createElement('div');
-    line.className = 'radial-line';
-    const dist = Math.sqrt((bx-x)**2 + (by-y)**2);
-    const lineAngle = Math.atan2(by-y, bx-x) * 180/Math.PI;
-    line.style.cssText = `left:${x}px;top:${y}px;width:${dist}px;transform:rotate(${lineAngle}deg);`;
-    menu.appendChild(line);
-
-    // Bouton
-    const btn = document.createElement('div');
-    btn.className = 'radial-btn';
-    btn.style.left = bx + 'px';
-    btn.style.top  = by + 'px';
-    btn.innerHTML = `<span class="r-icon">${action.icon}</span><span class="r-label">${action.label}</span>`;
-    btn.addEventListener('click', (e) => { e.stopPropagation(); handleRadialAction(action.action, cell); });
-    menu.appendChild(btn);
+  actions.forEach((a,i)=>{
+    const angle=(i/actions.length)*Math.PI*2-Math.PI/2;
+    const bx=Math.cos(angle)*radius,by=Math.sin(angle)*radius;
+    const btn=document.createElement('div');
+    btn.className='rm-btn';btn.style.left=bx+'px';btn.style.top=by+'px';
+    btn.textContent=a.icon;btn.title=a.label;
+    btn.onclick=()=>{a.fn(x,y);closeRadialMenu()};
+    const lbl=document.createElement('div');
+    lbl.className='rm-label';lbl.style.left=(bx+Math.cos(angle)*24)+'px';lbl.style.top=(by+Math.sin(angle)*24)+'px';
+    lbl.textContent=a.label;
+    menu.appendChild(btn);menu.appendChild(lbl);
   });
 
-  menu.classList.add('open');
+  // Close on outside click
+  setTimeout(()=>document.addEventListener('click',closeRadialMenuOnOutside),50);
 }
+function closeRadialMenuOnOutside(e){
+  if(!e.target.closest('#radial-menu')){closeRadialMenu();document.removeEventListener('click',closeRadialMenuOnOutside)}}
+function closeRadialMenu(){document.getElementById('radial-menu').classList.remove('open')}
 
-function closeRadialMenu() {
-  const menu = document.getElementById('radial-menu');
-  menu.classList.remove('open');
-}
-
-function handleRadialAction(action, cell) {
-  closeRadialMenu();
-  switch(action) {
-    case 'openVillagePanel': openVillagePanel(); break;
-    case 'explore':          exploreAround(cell.idx); toast('🔍 Expédition lancée !'); break;
-    case 'harvest':          gameState.resources.food += 40; toast('🌾 +40 Nourriture récoltée !'); updateResources(); break;
-    case 'chop':             gameState.resources.wood += 35; toast('🪵 +35 Bois coupé !');          updateResources(); break;
-    case 'mine':             gameState.resources.stone+= 30; toast('⛏ +30 Pierre extraite !');       updateResources(); break;
-    case 'fish':             gameState.resources.food += 25; toast('🎣 +25 Poissons pêchés !');      updateResources(); break;
-    case 'runes':            gameState.resources.runes+= 2;  toast('ᚱ +2 Runes découvertes !');      updateResources(); break;
-    case 'hunt':             gameState.resources.food += 20; gameState.resources.mead += 5;
-                             toast('🏹 Chasse fructueuse ! +20 🌾 +5 🍺'); updateResources(); break;
-    case 'loot':             lootRuins(cell); break;
-    case 'attackVillage':    toast('⚔ Module Combat — prochain sprint !'); break;
-    case 'spyVillage':       toast('🕵 Module Espionnage — prochain sprint !'); break;
-    default: toast(`✦ ${action} — bientôt disponible !`);
-  }
-}
-
-function lootRuins(cell) {
-  const loot = [
-    ()=>{ gameState.resources.gold+=50; return '🪙 +50 Or trouvé dans les ruines !'; },
-    ()=>{ gameState.resources.runes+=3; return 'ᚱ +3 Runes gravées sur les pierres !'; },
-    ()=>{ gameState.resources.souls+=1; return '☠ +1 Âme libérée des ruines !'; },
-    ()=>{ return '⚠ Piège ! Des Draugr surgissent des ruines !'; },
+function getActionsForCell(cell){
+  const actions=[];
+  if(cell.isPlayerVillage)return[
+    {icon:'🏘',label:'Village',fn:()=>window.location.href='yggdrasil-village.html'},
+    {icon:'⚔',label:'Armée',fn:()=>window.location.href='yggdrasil-armee.html'},
+    {icon:'📜',label:'Quêtes',fn:()=>window.location.href='yggdrasil-quetes.html'},
   ];
-  const result = loot[Math.floor(Math.random()*loot.length)]();
-  toast(result);
-  updateResources();
+  if(cell.aiClan){
+    const clan=AI_CLANS.find(c=>c.id===cell.aiClan);
+    return[
+      {icon:'⚔',label:'Attaquer',fn:(x,y)=>attackClan(x,y)},
+      {icon:'🤝',label:'Négocier',fn:(x,y)=>negotiateClan(x,y)},
+      {icon:'🕵',label:'Espionner',fn:(x,y)=>spyClan(x,y)},
+      {icon:'🎁',label:'Tribut',fn:(x,y)=>tributeClan(x,y)},
+    ];
+  }
+  if(cell.isAllyVillage)return[
+    {icon:'💬',label:'Chat',fn:()=>window.location.href='yggdrasil-alliance.html'},
+    {icon:'🧑‍🌾',label:'Péon',fn:()=>window.location.href='yggdrasil-alliance.html'},
+  ];
+  const base=[{icon:'🔭',label:'Explorer',fn:(x,y)=>{exploreAround(x,y,2);renderGrid();toast('🔭 Zone explorée !')}},{icon:'ℹ',label:'Infos',fn:(x,y)=>showSidePanel(x,y)}];
+  if(cell.event)base.unshift({icon:'❗',label:'Événement',fn:(x,y)=>resolveEvent(x,y)});
+  if(cell.resource&&!cell.resource.depleted)base.unshift({icon:'⛏',label:'Récolter',fn:(x,y)=>harvestResource(x,y)});
+  if(cell.isDungeon)base.unshift({icon:'🏛',label:'Explorer donjon',fn:(x,y)=>exploreDungeon(x,y)});
+  return base;
 }
 
-// ═══════════════════════════════════════════
-//  VILLAGE PANEL
-// ═══════════════════════════════════════════
-function openVillagePanel() {
-  document.getElementById('village-panel').classList.add('open');
-}
+// ═══════════════════════════════════════════════
+//  SIDE PANEL
+// ═══════════════════════════════════════════════
+function showSidePanel(x,y){
+  const cell=G.grid[y][x];
+  const key=`${x},${y}`;
+  const sp=document.getElementById('side-panel');
+  sp.classList.add('open');
+  document.getElementById('sp-title').textContent=`(${x},${y}) — ${cell.isPlayerVillage?'Votre Village':cell.isAllyVillage?'Village Allié':cell.aiClan?AI_CLANS.find(c=>c.id===cell.aiClan)?.name||'Clan':TERRAIN_NAMES[cell.terrain]}`;
 
-function closeVillagePanel() {
-  document.getElementById('village-panel').classList.remove('open');
-}
+  let html='';
+  const kg=KINGDOM_REGIONS[cell.kingdom];
+  html+=`<div class="sp-section">
+    <div class="sp-sec-title">Territoire</div>
+    <div class="sp-stat-row"><span>Royaume</span><span>${kg.name}${kg.unlocked?'':' 🔒'}</span></div>
+    <div class="sp-stat-row"><span>Terrain</span><span>${TERRAIN_ICONS[cell.terrain]} ${TERRAIN_NAMES[cell.terrain]}</span></div>
+    <div class="sp-stat-row"><span>Coordonnées</span><span>${x}, ${y}</span></div>
+    ${cell.isDungeon?`<div class="sp-stat-row"><span>Type</span><span>🏛 Donjon inexploré</span></div>`:''}
+  </div>`;
 
-// ═══════════════════════════════════════════
-//  INFO CASE
-// ═══════════════════════════════════════════
-let cellInfoTimeout = null;
-
-function showCellInfo(idx) {
-  const cell = gameState.cells[idx];
-  if(!cell.explored) return;
-
-  const terr = TERRAINS[cell.type] || TERRAINS.plains;
-  document.getElementById('ci-name').textContent   = terr.name;
-  document.getElementById('ci-desc').textContent   = terr.desc;
-  document.getElementById('ci-effects').textContent= cell.bonus ? `Ressource détectée : ${cell.bonus}` : '';
-
-  if(cellInfoTimeout) clearTimeout(cellInfoTimeout);
-  document.getElementById('cell-info').classList.add('open');
-}
-
-function hideCellInfo() {
-  cellInfoTimeout = setTimeout(() => {
-    document.getElementById('cell-info').classList.remove('open');
-  }, 300);
-}
-
-// ═══════════════════════════════════════════
-//  TOAST / ÉVÉNEMENTS
-// ═══════════════════════════════════════════
-function toast(msg) {
-  const container = document.getElementById('event-overlay');
-  const el = document.createElement('div');
-  el.className = 'event-toast';
-  el.innerHTML = msg;
-  container.appendChild(el);
-  setTimeout(() => el.remove(), 4000);
-}
-
-// ═══════════════════════════════════════════
-//  MÉTÉO & SAISONS
-// ═══════════════════════════════════════════
-function updateSeasonUI() {
-  const s = SEASONS[gameState.season];
-  const w = s.weathers[gameState.weatherIdx];
-
-  document.getElementById('season-icon').textContent = s.icon;
-  document.getElementById('season-name').textContent = s.name;
-  document.getElementById('weather-desc').textContent = w.desc;
-  document.getElementById('day-num').textContent = gameState.dayInSeason;
-
-  const pct = (gameState.dayInSeason / 49) * 100;
-  document.getElementById('cycle-fill').style.width = pct + '%';
-  document.getElementById('cycle-fill').style.background = s.cycleColor;
-
-  // Ciel
-  document.getElementById('sky').style.background = s.skyGrad;
-
-  // Overlay météo
-  applyWeatherOverlay(w.type);
-}
-
-function applyWeatherOverlay(type) {
-  const overlay = document.getElementById('weather-overlay');
-  overlay.innerHTML = '';
-
-  if(type === 'snow' || type === 'blizzard') {
-    const count = type === 'blizzard' ? 60 : 25;
-    for(let i=0; i<count; i++) {
-      const flake = document.createElement('div');
-      flake.className = 'snowflake';
-      flake.style.left = Math.random()*100 + 'vw';
-      flake.style.animationDuration = (2+Math.random()*4) + 's';
-      flake.style.animationDelay = (Math.random()*4) + 's';
-      flake.style.fontSize = (0.5+Math.random()*1) + 'rem';
-      flake.textContent = '❄';
-      overlay.appendChild(flake);
-    }
+  // Village joueur
+  if(cell.isPlayerVillage){
+    html+=`<div class="sp-section">
+      <div class="sp-sec-title">Votre Village</div>
+      <div class="sp-stat-row"><span>Gloire</span><span>⭐ ${G.glory}</span></div>
+      <div class="sp-stat-row"><span>Moral</span><span>${G.moral}%</span></div>
+      <div class="sp-stat-row"><span>Saison</span><span>${SEASONS[G.seasonIdx].icon} ${SEASONS[G.seasonIdx].label}</span></div>
+    </div>
+    <button class="sp-btn sp-btn-gold" onclick="window.location.href='yggdrasil-village.html'">🏘 Gérer le Village</button>
+    <button class="sp-btn sp-btn-gold" onclick="window.location.href='yggdrasil-armee.html'">⚔ Gérer l'Armée</button>`;
+  }
+  // Village allié
+  else if(cell.isAllyVillage){
+    html+=`<div class="sp-section">
+      <div class="sp-sec-title">Village Allié</div>
+      <div class="sp-stat-row"><span>Allié</span><span>Sigrid la Chaman</span></div>
+      <div class="sp-stat-row"><span>Statut</span><span style="color:var(--moss-light)">🟢 En ligne</span></div>
+      <div class="sp-stat-row"><span>Gloire</span><span>⭐ 890</span></div>
+    </div>
+    <button class="sp-btn sp-btn-green" onclick="window.location.href='yggdrasil-alliance.html'">🤝 Alliance</button>`;
+  }
+  // Clan IA
+  else if(cell.aiClan){
+    const clan=AI_CLANS.find(c=>c.id===cell.aiClan);
+    const repLabels={hostile:'Hostile',neutral:'Neutre',ally:'Allié',wary:'Méfiant'};
+    const repClass={hostile:'rep-hostile',neutral:'rep-neutral',ally:'rep-ally',wary:'rep-wary'};
+    html+=`<div class="sp-section">
+      <div class="sp-sec-title">Clan IA</div>
+      <div class="sp-stat-row"><span>Clan</span><span>${clan.icon} ${clan.name}</span></div>
+      <div class="sp-stat-row"><span>Réputation</span><span><div class="rep-badge ${repClass[clan.rep]}">${repLabels[clan.rep]}</div></span></div>
+      <div class="sp-stat-row"><span>Force estimée</span><span>${clan.strength} pts</span></div>
+      <div class="sp-stat-row"><span>Richesse</span><span>~${clan.wealth}🪙</span></div>
+      <div class="sp-stat-row"><span>Expansion</span><span>${clan.growing?'📈 Grandissant':'📉 Stagnant'}</span></div>
+    </div>
+    <button class="sp-btn sp-btn-red" onclick="attackClan(${x},${y});closeSidePanel()">⚔ Attaquer</button>
+    <button class="sp-btn sp-btn-gold" onclick="negotiateClan(${x},${y});closeSidePanel()">🤝 Négocier</button>
+    <button class="sp-btn sp-btn-purple" onclick="spyClan(${x},${y});closeSidePanel()">🕵 Espionner</button>
+    ${clan.rep!=='ally'?`<button class="sp-btn sp-btn-green" onclick="tributeClan(${x},${y});closeSidePanel()">🎁 Envoyer Tribut</button>`:''}`;
+  }
+  // Ressource
+  else if(cell.resource&&!cell.resource.depleted){
+    html+=`<div class="sp-section">
+      <div class="sp-sec-title">Ressource</div>
+      <div class="sp-stat-row"><span>Type</span><span>${RES_ICONS[cell.resource.type]} ${cell.resource.type}</span></div>
+      <div class="sp-stat-row"><span>Quantité estimée</span><span>~${cell.resource.amount}</span></div>
+    </div>
+    <button class="sp-btn sp-btn-gold" onclick="harvestResource(${x},${y});closeSidePanel()">⛏ Récolter</button>`;
+  }
+  // Donjon
+  else if(cell.isDungeon){
+    html+=`<div class="sp-section">
+      <div class="sp-sec-title">Donjon</div>
+      <div class="sp-stat-row"><span>Statut</span><span>🏛 Inexploré</span></div>
+      <div class="sp-stat-row"><span>Danger estimé</span><span style="color:var(--blood-bright)">⚠ Élevé</span></div>
+      <div class="sp-stat-row"><span>Récompenses</span><span>Runes · Or · Gloire</span></div>
+    </div>
+    <button class="sp-btn sp-btn-red" onclick="exploreDungeon(${x},${y});closeSidePanel()">🏛 Explorer</button>`;
+  }
+  // Événement
+  if(cell.event){
+    const ev=EVENT_TYPES.find(e=>e.id===cell.event);
+    html+=`<div class="sp-section">
+      <div class="sp-sec-title">Événement</div>
+      <div class="sp-stat-row"><span>Type</span><span>${ev?.icon} ${ev?.label}</span></div>
+    </div>
+    <button class="sp-btn sp-btn-gold" onclick="resolveEvent(${x},${y});closeSidePanel()">❗ Résoudre</button>`;
+  }
+  // Traces
+  if(cell.traces&&cell.traces.length>0){
+    html+=`<div class="sp-section">
+      <div class="sp-sec-title">Traces</div>
+      ${cell.traces.map(t=>`<div class="sp-stat-row"><span>${t==='battle'?'⚔ Bataille récente':'🔎 Passage espion'}</span></div>`).join('')}
+    </div>`;
+  }
+  // Production terrain
+  const prodRes=TERRAIN_RES[cell.terrain];
+  if(prodRes){
+    html+=`<div class="sp-section">
+      <div class="sp-sec-title">Production locale</div>
+      ${Object.entries(prodRes).map(([r,v])=>`<div class="sp-stat-row"><span>${RES_ICONS[r]||r}</span><span>+${v}/tour</span></div>`).join('')}
+    </div>`;
   }
 
-  if(type === 'rain' || type === 'storm') {
-    for(let i=0; i<40; i++) {
-      const drop = document.createElement('div');
-      drop.className = 'raindrop';
-      drop.style.left = Math.random()*100 + 'vw';
-      drop.style.height = (15+Math.random()*20) + 'px';
-      drop.style.animationDuration = (0.4+Math.random()*0.3) + 's';
-      drop.style.animationDelay = (Math.random()*2) + 's';
-      overlay.appendChild(drop);
+  document.getElementById('sp-body').innerHTML=html;
+}
+function closeSidePanel(){document.getElementById('side-panel').classList.remove('open')}
+
+// ═══════════════════════════════════════════════
+//  ACTIONS
+// ═══════════════════════════════════════════════
+function attackClan(x,y){
+  const cell=G.grid[y][x];
+  const clan=AI_CLANS.find(c=>c.id===cell.aiClan);if(!clan)return;
+  const roll=Math.random();
+  const winChance=clan.rep==='hostile'?.45:clan.rep==='neutral'?.6:.35;
+  if(roll<winChance){
+    const loot=Math.floor(clan.wealth*.2);
+    G.resources.gold+=loot;G.glory+=60;
+    clan.wealth=Math.max(0,clan.wealth-loot);
+    clan.rep='hostile';clan.strength=Math.max(10,clan.strength-15);
+    cell.traces.push('battle');
+    addEventLog(`⚔ Victoire sur ${clan.name} ! +${loot}🪙 +60 Gloire`,'good');
+    toast(`⚔ Victoire ! +${loot}🪙`,'s');
+  }else{
+    const loss=Math.floor(G.resources.gold*.05);
+    G.resources.gold=Math.max(0,G.resources.gold-loss);
+    G.moral=Math.max(0,G.moral-10);
+    cell.traces.push('battle');
+    addEventLog(`💀 Défaite contre ${clan.name}. -${loss}🪙`,'hostile');
+    toast(`💀 Défaite contre ${clan.name}`,'d');
+  }
+  renderCell(x,y);updateRes();updateMoral();
+}
+
+function negotiateClan(x,y){
+  const cell=G.grid[y][x];
+  const clan=AI_CLANS.find(c=>c.id===cell.aiClan);if(!clan)return;
+  if(G.resources.gold<50){toast('❌ 50🪙 nécessaires pour négocier','d');return}
+  G.resources.gold-=50;
+  if(clan.rep==='hostile'){clan.rep='wary';toast(`🤝 ${clan.name} vous considère moins hostile`,'info');}
+  else if(clan.rep==='wary'){clan.rep='neutral';toast(`🤝 ${clan.name} est maintenant neutre`,'info');}
+  else if(clan.rep==='neutral'){clan.rep='ally';toast(`✦ ${clan.name} est maintenant votre allié !`,'s');G.glory+=50;}
+  addEventLog(`🤝 Négociation avec ${clan.name} — Réputation améliorée`,'good');
+  updateRes();showSidePanel(x,y);
+}
+
+function spyClan(x,y){
+  const cell=G.grid[y][x];
+  const clan=AI_CLANS.find(c=>c.id===cell.aiClan);if(!clan)return;
+  if(G.spyActive){toast('🕵 Un espion est déjà en mission !','d');return}
+  G.spyActive=true;
+  // Animation espion
+  const el=document.getElementById(`cell-${x}-${y}`);
+  const rect=el?.getBoundingClientRect();
+  if(rect){
+    const spy=document.createElement('div');spy.className='spy-anim';spy.textContent='🕵';
+    spy.style.left=(rect.left+rect.width/2-12)+'px';spy.style.top=(rect.top-10)+'px';
+    document.body.appendChild(spy);setTimeout(()=>spy.remove(),2100);
+  }
+  setTimeout(()=>{
+    G.spyActive=false;
+    cell.traces.push('spy');renderCell(x,y);
+    const report=`${clan.name} : Force ${clan.strength}pts, Richesse ~${clan.wealth}🪙, ${clan.growing?'en expansion':'stable'}`;
+    toast(`🕵 Rapport : ${report}`,'info');
+    addEventLog(`🕵 Espionnage de ${clan.name} réussi`,'');
+  },2000);
+  toast('🕵 Espion envoyé…','info');
+}
+
+function tributeClan(x,y){
+  const cell=G.grid[y][x];
+  const clan=AI_CLANS.find(c=>c.id===cell.aiClan);if(!clan)return;
+  const amt=80;
+  if(G.resources.gold<amt){toast(`❌ ${amt}🪙 nécessaires pour un tribut`,'d');return}
+  G.resources.gold-=amt;
+  if(clan.rep==='hostile')clan.rep='wary';
+  else if(clan.rep==='wary')clan.rep='neutral';
+  toast(`🎁 Tribut envoyé à ${clan.name} (${amt}🪙) — Paix temporaire`,'info');
+  addEventLog(`🎁 Tribut à ${clan.name}`,'');
+  updateRes();showSidePanel(x,y);
+}
+
+function harvestResource(x,y){
+  const cell=G.grid[y][x];
+  if(!cell.resource||cell.resource.depleted)return;
+  const r=cell.resource;
+  G.resources[r.type]=(G.resources[r.type]||0)+r.amount;
+  G.glory+=10;r.depleted=true;
+  toast(`⛏ +${r.amount} ${RES_ICONS[r.type]||r.type} récoltés !`,'s');
+  addEventLog(`⛏ Récolte : +${r.amount} ${r.type}`,'good');
+  renderCell(x,y);updateRes();
+}
+
+function exploreDungeon(x,y){
+  const cell=G.grid[y][x];if(!cell.isDungeon)return;
+  cell.isDungeon=false;
+  const rewards={runes:Math.floor(Math.random()*6)+3,gold:Math.floor(Math.random()*60)+30};
+  Object.entries(rewards).forEach(([r,v])=>{G.resources[r]=(G.resources[r]||0)+v});
+  G.glory+=80;
+  cell.traces.push('battle');
+  toast(`🏛 Donjon exploré ! +${rewards.runes}ᚱ +${rewards.gold}🪙 +80 Gloire`,'s');
+  addEventLog(`🏛 Donjon conquis ! +80 Gloire`,'good');
+  renderCell(x,y);updateRes();
+}
+
+function resolveEvent(x,y){
+  const cell=G.grid[y][x];if(!cell.event)return;
+  const ev=EVENT_TYPES.find(e=>e.id===cell.event);
+  const outcomes={
+    raid_incoming:()=>{G.moral=Math.max(0,G.moral-8);toast('⚔ Raid repoussé ! -8 moral','d');addEventLog('⚔ Raid repoussé !','hostile')},
+    resource_node:()=>{const r=Math.floor(Math.random()*50)+20;G.resources.wood+=r;toast(`💰 +${r}🪵 trouvés !`,'s')},
+    merchant:()=>{G.resources.gold+=30;toast('🧑‍💼 Marchand : +30🪙','s')},
+    storm:()=>{G.resources.food=Math.max(0,G.resources.food-40);toast('⛈ Tempête ! -40🌾','d')},
+    divine_sign:()=>{G.resources.runes+=3;G.glory+=50;toast('🦅 Signe d\'Odin ! +3ᚱ +50 Gloire','divine');addEventLog('🦅 Signe divin reçu !','divine')},
+    ruins_found:()=>{G.resources.runes+=2;G.resources.gold+=25;toast('🏚 Ruines : +2ᚱ +25🪙','s')},
+    clan_war:()=>{const c=AI_CLANS[Math.floor(Math.random()*AI_CLANS.length)];c.strength+=15;toast(`💥 Guerre : ${c.name} grandit !`,'d')},
+    alliance_request:()=>{toast('🤝 Demande d\'alliance reçue !','info')},
+  };
+  outcomes[cell.event]?.();
+  cell.event=null;renderCell(x,y);updateRes();updateMoral();
+}
+
+// ═══════════════════════════════════════════════
+//  WEATHER
+// ═══════════════════════════════════════════════
+function spawnWeatherParticles(){
+  const ov=document.getElementById('weather-overlay');
+  ov.innerHTML='';
+  const s=SEASONS[G.seasonIdx];
+  if(s.key==='winter'){
+    for(let i=0;i<40;i++){
+      const p=document.createElement('div');p.className='weather-particle';
+      p.textContent='❄';p.style.cssText=`left:${Math.random()*100}%;font-size:${.6+Math.random()*.5}rem;opacity:${.3+Math.random()*.4};animation-duration:${3+Math.random()*4}s;animation-delay:${Math.random()*4}s`;
+      ov.appendChild(p);
+    }
+  }else if(s.key==='autumn'){
+    for(let i=0;i<20;i++){
+      const p=document.createElement('div');p.className='weather-particle';
+      p.textContent=['🍂','🍁'][Math.floor(Math.random()*2)];
+      p.style.cssText=`left:${Math.random()*100}%;font-size:${.5+Math.random()*.4}rem;opacity:${.2+Math.random()*.3};animation-duration:${5+Math.random()*5}s;animation-delay:${Math.random()*5}s`;
+      ov.appendChild(p);
     }
   }
 }
 
-// ═══════════════════════════════════════════
-//  MINIMAP
-// ═══════════════════════════════════════════
-const MINIMAP_COLORS = {
-  fog:      '#0d0a05',
-  plains:   '#4a6a28',
-  forest:   '#1e3510',
-  mountain: '#4a3a2a',
-  water:    '#1a4a6a',
-  tundra:   '#6a94a8',
-  swamp:    '#2a3a10',
-  ruins:    '#3a2a1a',
-  village_ally:  '#64c850',
-  village_enemy: '#c83228',
-};
+function updateSeasonUI(){
+  const s=SEASONS[G.seasonIdx];
+  const chip=document.getElementById('season-chip');
+  if(chip)chip.innerHTML=`${s.icon} ${s.label} · Jour <span id="day-num">${G.day}</span>`;
+  const bb=document.getElementById('bb-season');
+  if(bb)bb.textContent=`${s.icon} ${s.label} · ${s.desc}`;
+  document.getElementById('day-counter').textContent=`Jour ${G.day}`;
+  spawnWeatherParticles();
+}
 
-function renderMinimap() {
-  const canvas = document.getElementById('minimap-canvas');
-  const ctx = canvas.getContext('2d');
-  const cw = 120 / GRID_SIZE;
-
-  gameState.cells.forEach(cell => {
-    const x = cell.col * cw;
-    const y = cell.row * cw;
-    ctx.fillStyle = cell.explored ? (MINIMAP_COLORS[cell.type] || '#4a6a28') : '#0d0a05';
-    ctx.fillRect(x, y, cw, cw);
+// ═══════════════════════════════════════════════
+//  IA VIVANTE
+// ═══════════════════════════════════════════════
+function tickAI(){
+  // Clans grandissent / s'affrontent
+  AI_CLANS.forEach(clan=>{
+    if(clan.growing&&Math.random()<.3)clan.strength=Math.min(120,clan.strength+1);
+    if(Math.random()<.05)clan.wealth+=Math.floor(Math.random()*20)+5;
   });
-
-  // Viewport indicator
-  ctx.strokeStyle = 'rgba(212,160,23,0.6)';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(0, 0, 120, 120);
-}
-
-// ═══════════════════════════════════════════
-//  ZOOM & PAN
-// ═══════════════════════════════════════════
-let scale = 0.85, panX = 0, panY = 0;
-let isDragging = false, dragStartX = 0, dragStartY = 0, panStartX = 0, panStartY = 0;
-
-function applyTransform() {
-  document.getElementById('map-wrap').style.transform = `translate(${panX}px,${panY}px) scale(${scale})`;
-}
-
-function centerOnVillage() {
-  const container = document.getElementById('map-container');
-  const cw = container.clientWidth;
-  const ch = container.clientHeight;
-  const villageX = (8 * 66 + 20) * scale;
-  const villageY = (8 * 66 + 20) * scale;
-  panX = cw/2 - villageX;
-  panY = ch/2 - villageY;
-  applyTransform();
-}
-
-function zoomIn()    { scale = Math.min(scale * 1.2, 2);   applyTransform(); }
-function zoomOut()   { scale = Math.max(scale * 0.8, 0.4); applyTransform(); }
-function resetView() { scale = 0.85; centerOnVillage(); }
-
-// Drag
-document.getElementById('map-container').addEventListener('mousedown', e => {
-  if(e.button !== 0) return;
-  isDragging = true;
-  dragStartX = e.clientX; dragStartY = e.clientY;
-  panStartX  = panX;      panStartY  = panY;
-});
-
-document.addEventListener('mousemove', e => {
-  if(!isDragging) return;
-  panX = panStartX + (e.clientX - dragStartX);
-  panY = panStartY + (e.clientY - dragStartY);
-  applyTransform();
-});
-
-document.addEventListener('mouseup', () => { isDragging = false; });
-
-// Touch
-document.getElementById('map-container').addEventListener('touchstart', e => {
-  const t = e.touches[0];
-  isDragging = true;
-  dragStartX = t.clientX; dragStartY = t.clientY;
-  panStartX  = panX;      panStartY  = panY;
-});
-
-document.addEventListener('touchmove', e => {
-  if(!isDragging) return;
-  const t = e.touches[0];
-  panX = panStartX + (t.clientX - dragStartX);
-  panY = panStartY + (t.clientY - dragStartY);
-  applyTransform();
-});
-
-document.addEventListener('touchend', () => { isDragging = false; });
-
-// Fermer le menu radial en cliquant ailleurs
-document.getElementById('map-container').addEventListener('click', closeRadialMenu);
-
-// Scroll zoom
-document.getElementById('map-container').addEventListener('wheel', e => {
-  e.preventDefault();
-  if(e.deltaY < 0) zoomIn(); else zoomOut();
-}, { passive:false });
-
-// ═══════════════════════════════════════════
-//  RESSOURCES UI
-// ═══════════════════════════════════════════
-function updateResources() {
-  const r = gameState.resources;
-  document.getElementById('r-wood').textContent  = r.wood;
-  document.getElementById('r-stone').textContent = r.stone;
-  document.getElementById('r-food').textContent  = r.food;
-  document.getElementById('r-gold').textContent  = r.gold;
-  document.getElementById('r-runes').textContent = r.runes;
-  document.getElementById('r-souls').textContent = r.souls;
-  document.getElementById('r-mead').textContent  = r.mead;
-}
-
-// ═══════════════════════════════════════════
-//  NUAGES DE FOND
-// ═══════════════════════════════════════════
-function spawnClouds() {
-  const sky = document.getElementById('sky');
-  for(let i=0; i<6; i++) {
-    const cloud = document.createElement('div');
-    cloud.className = 'cloud';
-    cloud.style.width  = (80 + Math.random()*120) + 'px';
-    cloud.style.height = (30 + Math.random()*40)  + 'px';
-    cloud.style.top    = (10 + Math.random()*40)  + '%';
-    cloud.style.background = `rgba(255,255,255,${0.3+Math.random()*0.4})`;
-    cloud.style.animationDuration = (30+Math.random()*50) + 's';
-    cloud.style.animationDelay    = (-Math.random()*60) + 's';
-    sky.appendChild(cloud);
-  }
-}
-
-// ═══════════════════════════════════════════
-//  BOUCLE DE JEU (ticks légers)
-// ═══════════════════════════════════════════
-setInterval(() => {
-  gameState.tick++;
-
-  // Production toutes les 10 ticks
-  if(gameState.tick % 10 === 0) {
-    const r = gameState.resources;
-    const bonus = gameState.season === 0 ? 1.3 : gameState.season === 3 ? 0.5 : 1;
-    r.wood  += Math.floor(6  * bonus);
-    r.stone += Math.floor(4  * bonus);
-    r.food  += Math.floor(8  * bonus);
-    r.gold  += Math.floor(2  * bonus);
-    updateResources();
-  }
-
-  // Avance du temps
-  if(gameState.tick % 30 === 0) {
-    gameState.dayInSeason++;
-    if(gameState.dayInSeason > 49) {
-      gameState.dayInSeason = 1;
-      gameState.season = (gameState.season + 1) % 4;
-      gameState.weatherIdx = Math.floor(Math.random() * 3);
-      const s = SEASONS[gameState.season];
-      toast(`${s.icon} Nouvelle saison : ${s.name} !`);
-      applyWeatherOverlay(s.weathers[gameState.weatherIdx].type);
+  // Guerres entre clans IA
+  if(Math.random()<.04){
+    const hostile=AI_CLANS.filter(c=>c.rep==='hostile');
+    const neutral=AI_CLANS.filter(c=>c.rep==='neutral');
+    if(hostile.length&&neutral.length){
+      const att=hostile[Math.floor(Math.random()*hostile.length)];
+      const def=neutral[Math.floor(Math.random()*neutral.length)];
+      const w=att.strength>def.strength;
+      if(w){def.strength=Math.max(5,def.strength-10);att.wealth+=30;}
+      else{att.strength=Math.max(5,att.strength-8);}
+      addEventLog(`💥 ${att.name} attaque ${def.name} — ${w?att.name+' gagne':def.name+' résiste'}!`,'hostile');
     }
-    updateSeasonUI();
   }
-
-  // Événement météo aléatoire rare
-  if(gameState.tick % 200 === 0) {
-    gameState.weatherIdx = Math.floor(Math.random() * 3);
-    const w = SEASONS[gameState.season].weathers[gameState.weatherIdx];
-    updateSeasonUI();
-    toast(`🌀 Changement météo — ${w.desc}`);
+  // Clans IA font des demandes
+  if(Math.random()<.025){
+    const ally=AI_CLANS.find(c=>c.rep==='ally');
+    if(ally)addEventLog(`🤝 ${ally.name} demande ${Math.floor(Math.random()*30)+20}🪙 de soutien`,'');
   }
+  // Événements aléatoires sur carte
+  if(Math.random()<.06){
+    const ex=[...G.explored];
+    if(ex.length){
+      const [kx,ky]=ex[Math.floor(Math.random()*ex.length)].split(',').map(Number);
+      const cell=G.grid[ky]?.[kx];
+      if(cell&&!cell.event&&!cell.isPlayerVillage&&!cell.isAllyVillage&&!cell.aiClan){
+        const ev=EVENT_TYPES.filter(e=>e.prob).sort(()=>Math.random()-.5)[0];
+        cell.event=ev.id;renderCell(kx,ky);
+        addEventLog(`${ev.icon} ${ev.label} en (${kx},${ky})`,(ev.cls||''));
+      }
+    }
+  }
+}
 
-}, 1000);
+// ═══════════════════════════════════════════════
+//  PRODUCTION
+// ═══════════════════════════════════════════════
+function tickProduction(){
+  const s=SEASONS[G.seasonIdx];
+  const base={wood:6,stone:4,food:8,gold:2};
+  Object.entries(base).forEach(([r,v])=>{G.resources[r]=(G.resources[r]||0)+Math.floor(v*s.prod)});
+  updateRes();
+}
 
-// ═══════════════════════════════════════════
+// ═══════════════════════════════════════════════
+//  EVENTS LOG
+// ═══════════════════════════════════════════════
+function addEventLog(text,cls){
+  const log=document.getElementById('events-log');
+  const el=document.createElement('div');
+  el.className=`ev-line ${cls||''}`;el.textContent=text;
+  log.insertBefore(el,log.firstChild);
+  setTimeout(()=>el.remove(),5000);
+  if(log.children.length>6)[...log.children].slice(6).forEach(c=>c.remove());
+}
+
+// ═══════════════════════════════════════════════
+//  UI UTILS
+// ═══════════════════════════════════════════════
+function updateRes(){
+  ['wood','stone','food','gold','runes','mead'].forEach(k=>{
+    const el=document.getElementById('r-'+k);if(el)el.textContent=Math.floor(G.resources[k]||0);
+  });
+}
+function updateMoral(){
+  const m=G.moral,col=m>=60?'#6aaa50':m>=30?'#d4a017':'#e74c3c';
+  const bar=document.getElementById('moral-bar'),val=document.getElementById('moral-val');
+  if(bar){bar.style.width=m+'%';bar.style.background=col}
+  if(val){val.textContent=m;val.style.color=col}
+  const gv=document.getElementById('glory-val');if(gv)gv.textContent=G.glory;
+}
+function toast(msg,type){
+  const c=document.getElementById('toasts');const el=document.createElement('div');
+  el.className='toast'+(type?' '+type:'');el.textContent=msg;c.appendChild(el);setTimeout(()=>el.remove(),4000);
+}
+function toggleLegend(){document.getElementById('kingdom-legend').classList.toggle('hidden')}
+
+// ═══════════════════════════════════════════════
 //  INIT
-// ═══════════════════════════════════════════
-gameState.cells = generateMap();
-renderGrid();
-updateSeasonUI();
-updateResources();
-spawnClouds();
+// ═══════════════════════════════════════════════
+function init(){
+  G.grid=generateGrid();
+  // Explorer autour du village de départ
+  exploreAround(G.playerCell.x,G.playerCell.y,3);
+  exploreAround(5,11,2); // Village allié
+  renderGrid();
+  updateSeasonUI();updateRes();updateMoral();
+  centerOnVillage();
+  // Boucle principale
+  setInterval(()=>{
+    G.tick++;
+    if(G.tick%8===0){tickProduction();updateMoral();}
+    if(G.tick%20===0){tickAI();}
+    // Avancer les jours
+    if(G.tick%60===0){
+      G.day++;
+      document.getElementById('day-counter').textContent=`Jour ${G.day}`;
+      const dn=document.getElementById('day-num');if(dn)dn.textContent=G.day;
+      if(G.day%28===0){
+        G.seasonIdx=(G.seasonIdx+1)%4;
+        updateSeasonUI();
+        addEventLog(`${SEASONS[G.seasonIdx].icon} Nouvelle saison : ${SEASONS[G.seasonIdx].label} !`,'divine');
+        toast(`${SEASONS[G.seasonIdx].icon} ${SEASONS[G.seasonIdx].label} commence !`,'divine');
+      }
+    }
+  },1000);
+  // Messages de bienvenue
+  setTimeout(()=>{
+    toast('🗺 Cliquez sur une case pour l\'explorer','info');
+    addEventLog('🌳 Bienvenue dans Yggdrasil','divine');
+  },600);
+  setTimeout(()=>toast('🍂 Automne : constituez vos provisions !','d'),1600);
+  setTimeout(()=>{
+    addEventLog('⚔ Clan Ulfhéðnar repéré au nord-est','hostile');
+    addEventLog('🤝 Alliance Sólveig envoie des salutations','good');
+  },2500);
+}
 
-// Centrer après rendu
-requestAnimationFrame(() => {
-  setTimeout(centerOnVillage, 50);
-});
-
-// Toast de bienvenue
-setTimeout(() => toast('🪓 Bienvenue à Yggdrasil — Votre destin commence ici.'), 500);
-setTimeout(() => toast('🔍 Cliquez sur le brouillard pour explorer les terres inconnues.'), 2000);
+init();
 </script>
 </body>
 </html>
