@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YGGDRASIL</title>
+<link href="https://fonts.googleapis.com/css2?family=Uncial+Antiqua&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#c8960c;--gold-light:#f0c040;--gold-glow:rgba(200,150,12,.5);--parch:#d4b896;--parch-dim:#8a7055;--parch-light:#f0dfc0;--ink:#0e0a04;--blood:#8b1a1a;--moss-light:#6aaa50;--purple:#8e44ad;--border:rgba(200,150,12,.22)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'IM Fell English',Georgia,serif;background:var(--ink);color:var(--parch);overflow:hidden}
+
+/* FOND ÉTOILÉ */
+#stars{position:fixed;inset:0;z-index:0}
+.star{position:absolute;background:white;border-radius:50%;animation:twinkle 2s ease-in-out infinite}
+@keyframes twinkle{0%,100%{opacity:.15}50%{opacity:.9}}
+#aurora{position:fixed;inset:0;z-index:1;
+  background:radial-gradient(ellipse at 20% 40%,rgba(74,122,53,.12),transparent 50%),
+             radial-gradient(ellipse at 80% 60%,rgba(142,68,173,.1),transparent 50%),
+             radial-gradient(ellipse at 50% 20%,rgba(200,150,12,.07),transparent 50%);
+  animation:auroraShift 8s ease-in-out infinite alternate}
+@keyframes auroraShift{0%{opacity:.6}100%{opacity:1;filter:hue-rotate(20deg)}}
+
+/* RUNES BG */
+.bg-rune{position:fixed;font-size:9rem;opacity:.012;color:var(--gold);animation:runeFloat 20s ease-in-out infinite;pointer-events:none;z-index:2}
+@keyframes runeFloat{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-20px) rotate(5deg)}}
+
+/* LOGO */
+#logo-wrap{position:relative;z-index:10;text-align:center;margin-bottom:1.5rem;animation:logoIn 1.5s ease both}
+@keyframes logoIn{from{opacity:0;transform:translateY(-30px)}to{opacity:1;transform:translateY(0)}}
+.logo-tree{font-size:5rem;filter:drop-shadow(0 0 30px rgba(200,150,12,.4));animation:treePulse 4s ease-in-out infinite;display:block;margin-bottom:.5rem}
+@keyframes treePulse{0%,100%{filter:drop-shadow(0 0 20px rgba(74,122,53,.3))}50%{filter:drop-shadow(0 0 50px rgba(74,122,53,.6))}}
+.logo-title{font-family:'Uncial Antiqua',serif;font-size:4rem;color:var(--gold-light);letter-spacing:8px;text-shadow:0 0 40px var(--gold-glow);line-height:1}
+.logo-runes{font-size:.85rem;color:var(--parch-dim);letter-spacing:6px;margin-top:.4rem;font-family:'Uncial Antiqua',serif}
+.logo-sub{font-size:.85rem;color:var(--parch-dim);font-style:italic;margin-top:.5rem;letter-spacing:2px}
+
+/* LAYOUT PRINCIPAL */
+#app{position:relative;z-index:10;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1rem}
+
+/* ÉCRANS */
+.screen{display:none;width:100%;max-width:800px;flex-direction:column;align-items:center;animation:screenIn .5s ease}
+.screen.active{display:flex}
+@keyframes screenIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+/* BOUTONS MENU */
+.menu-btns{display:flex;flex-direction:column;gap:.7rem;width:260px;margin-top:1.2rem}
+.menu-btn{padding:.65rem 1.5rem;font-family:'Uncial Antiqua',serif;font-size:.95rem;letter-spacing:2px;border-radius:4px;cursor:pointer;transition:all .25s;text-align:center;position:relative;overflow:hidden}
+.menu-btn::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(200,150,12,.15),transparent);transition:left .4s}
+.menu-btn:hover::before{left:100%}
+.btn-primary{background:linear-gradient(135deg,rgba(200,150,12,.2),rgba(200,150,12,.06));border:1px solid rgba(200,150,12,.7);color:var(--gold-light);box-shadow:0 0 20px rgba(200,150,12,.2)}
+.btn-primary:hover{background:rgba(200,150,12,.3);box-shadow:0 0 30px var(--gold-glow);transform:translateY(-2px)}
+.btn-secondary{background:rgba(14,10,4,.8);border:1px solid var(--border);color:var(--parch-dim)}
+.btn-secondary:hover{border-color:rgba(200,150,12,.4);color:var(--parch);transform:translateY(-2px)}
+.btn-danger{background:rgba(139,26,26,.1);border:1px solid rgba(139,26,26,.5);color:#e74c3c}
+.btn-danger:hover{background:rgba(139,26,26,.25);transform:translateY(-2px)}
+
+/* SAUVEGARDE EXISTANTE */
+#save-preview{background:rgba(14,10,4,.9);border:1px solid rgba(200,150,12,.35);border-radius:6px;padding:.9rem 1.2rem;width:100%;max-width:320px;margin-bottom:.5rem}
+.sv-row{display:flex;justify-content:space-between;font-size:.8rem;padding:.18rem 0;border-bottom:1px solid rgba(200,150,12,.06)}
+.sv-row:last-child{border-bottom:none}
+.sv-row span:last-child{color:var(--parch-light);font-weight:600}
+
+/* CHOIX DU RÔLE */
+.roles-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.9rem;width:100%;max-width:560px;margin:1rem 0}
+.role-card{background:rgba(14,10,4,.92);border:2px solid var(--border);border-radius:8px;padding:1.2rem;cursor:pointer;transition:all .22s;text-align:center;position:relative;overflow:hidden}
+.role-card::after{content:'';position:absolute;inset:0;border-radius:7px;opacity:0;transition:opacity .2s}
+.role-card:hover{transform:translateY(-4px);border-color:rgba(200,150,12,.6)}
+.role-card:hover::after{opacity:1}
+.role-card.selected{border-color:var(--gold);box-shadow:0 0 25px var(--gold-glow)}
+.role-card.selected::after{opacity:1}
+.rc-jarl::after{background:linear-gradient(135deg,rgba(200,50,50,.06),transparent)}
+.rc-chaman::after{background:linear-gradient(135deg,rgba(142,68,173,.08),transparent)}
+.rc-skald::after{background:linear-gradient(135deg,rgba(74,138,176,.08),transparent)}
+.rc-forge::after{background:linear-gradient(135deg,rgba(200,150,12,.08),transparent)}
+.role-icon{font-size:2.8rem;margin-bottom:.5rem;filter:drop-shadow(0 2px 8px rgba(0,0,0,.6))}
+.role-name{font-family:'Uncial Antiqua',serif;font-size:1rem;letter-spacing:2px;margin-bottom:.3rem}
+.rc-jarl .role-name{color:#e74c3c}.rc-chaman .role-name{color:#c070e0}.rc-skald .role-name{color:#4a9abb}.rc-forge .role-name{color:var(--gold)}
+.role-desc{font-size:.72rem;color:var(--parch-dim);font-style:italic;line-height:1.5;margin-bottom:.5rem}
+.role-bonuses{display:flex;flex-direction:column;gap:.15rem}
+.role-bonus{font-size:.68rem;color:var(--parch-dim);text-align:left}
+.role-bonus span{margin-right:.25rem}
+.role-selected-badge{position:absolute;top:.5rem;right:.5rem;background:var(--gold);color:var(--ink);font-size:.6rem;font-family:'Uncial Antiqua',serif;padding:.15rem .4rem;border-radius:8px;display:none}
+.role-card.selected .role-selected-badge{display:block}
+
+/* FORM JOUEUR */
+.form-section{width:100%;max-width:380px;margin:.5rem 0}
+.form-label{font-size:.68rem;letter-spacing:2px;text-transform:uppercase;color:var(--parch-dim);display:block;margin-bottom:.3rem}
+.form-input{width:100%;background:rgba(0,0,0,.5);border:1px solid var(--border);color:var(--parch);padding:.55rem .7rem;font-family:'IM Fell English',serif;font-size:1rem;border-radius:4px;outline:none;transition:border-color .2s;text-align:center;letter-spacing:1px}
+.form-input:focus{border-color:var(--gold)}
+.form-hint{font-size:.68rem;color:var(--parch-dim);font-style:italic;text-align:center;margin-top:.3rem}
+
+/* ALLIANCE SETUP */
+.alliance-choice{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;width:100%;max-width:460px;margin:.7rem 0}
+.ac-card{background:rgba(14,10,4,.9);border:1px solid var(--border);border-radius:6px;padding:.9rem;text-align:center;cursor:pointer;transition:all .2s}
+.ac-card:hover{border-color:rgba(200,150,12,.5);transform:translateY(-3px)}
+.ac-card.selected{border-color:var(--gold);background:rgba(200,150,12,.08)}
+.ac-icon{font-size:2rem;margin-bottom:.4rem}
+.ac-name{font-family:'Uncial Antiqua',serif;font-size:.85rem;color:var(--gold-light);margin-bottom:.25rem}
+.ac-desc{font-size:.68rem;color:var(--parch-dim);font-style:italic}
+
+/* CINÉMATIQUE INTRO */
+#intro-cinema{position:fixed;inset:0;z-index:500;background:#000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1.5rem}
+#intro-cinema.hidden{display:none}
+.intro-line{font-family:'Uncial Antiqua',serif;font-size:1.3rem;color:var(--gold-light);letter-spacing:3px;text-align:center;opacity:0;animation:introLine 1s ease .3s forwards;max-width:500px;line-height:1.6}
+.intro-line:nth-child(2){animation-delay:.9s}
+.intro-line:nth-child(3){animation-delay:1.6s}
+.intro-line:nth-child(4){animation-delay:2.3s;font-size:.85rem;color:var(--parch-dim);font-style:italic;font-family:'IM Fell English',serif}
+@keyframes introLine{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.intro-skip{position:absolute;bottom:1.5rem;right:1.5rem;font-size:.72rem;color:var(--parch-dim);cursor:pointer;border:1px solid var(--border);padding:.3rem .7rem;border-radius:3px;transition:all .2s}
+.intro-skip:hover{color:var(--parch);border-color:rgba(200,150,12,.4)}
+
+/* CRÉDITS */
+.credits-box{background:rgba(14,10,4,.9);border:1px solid var(--border);border-radius:6px;padding:1.2rem 1.8rem;max-width:380px;text-align:center;margin-top:.5rem}
+.credits-box h3{font-family:'Uncial Antiqua',serif;color:var(--gold);font-size:.95rem;letter-spacing:2px;margin-bottom:.7rem}
+.credits-box p{font-size:.75rem;color:var(--parch-dim);line-height:1.8}
+
+/* ÉTAPES */
+.step-dots{display:flex;gap:.5rem;margin:.5rem 0}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--border);transition:background .2s}
+.dot.active{background:var(--gold)}
+
+/* SEPARATEUR */
+.ornament{color:var(--parch-dim);font-size:.85rem;letter-spacing:4px;margin:.3rem 0;opacity:.5}
+
+/* BACK BTN */
+.back-link{font-size:.72rem;color:var(--parch-dim);cursor:pointer;margin-top:.5rem;text-decoration:underline;text-underline-offset:3px}
+.back-link:hover{color:var(--parch)}
+</style>
+</head>
+<body>
+
+<!-- FOND -->
+<div id="stars"></div>
+<div id="aurora"></div>
+<div class="bg-rune" style="top:5%;left:2%">ᚠ</div>
+<div class="bg-rune" style="top:60%;left:85%;animation-delay:-8s">ᚢ</div>
+<div class="bg-rune" style="top:30%;left:45%;animation-delay:-14s;font-size:6rem">ᛏ</div>
+
+<!-- CINÉMATIQUE INTRO -->
+<div id="intro-cinema">
+  <div class="intro-line">🌳</div>
+  <div class="intro-line">Au commencement, il n'y avait que le vide.</div>
+  <div class="intro-line">Puis Yggdrasil poussa — et les Neuf Mondes naquirent.</div>
+  <div class="intro-line">Votre saga commence maintenant, Jarl.</div>
+  <div class="intro-skip" onclick="skipIntro()">Passer ↵</div>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+  <!-- ÉCRAN : MENU PRINCIPAL -->
+  <div class="screen active" id="screen-main">
+    <div id="logo-wrap">
+      <span class="logo-tree">🌳</span>
+      <div class="logo-title">YGGDRASIL</div>
+      <div class="logo-runes">ᚠ ᚢ ᚦ ᚨ ᚱ ᚲ</div>
+      <div class="logo-sub">Stratégie Viking Coopérative</div>
+    </div>
+    <div class="ornament">⁂ ⁂ ⁂</div>
+    <div class="menu-btns" id="main-btns"></div>
+  </div>
+
+  <!-- ÉCRAN : NOUVELLE PARTIE — NOM -->
+  <div class="screen" id="screen-name">
+    <div style="font-family:'Uncial Antiqua',serif;font-size:1.4rem;color:var(--gold-light);letter-spacing:3px;margin-bottom:.3rem">Votre Identité</div>
+    <div style="font-size:.78rem;color:var(--parch-dim);font-style:italic;margin-bottom:1.2rem">Comment les skalds chanteront-ils votre nom ?</div>
+    <div class="step-dots"><div class="dot active"></div><div class="dot"></div><div class="dot"></div></div>
+    <div class="form-section">
+      <label class="form-label">Nom du Jarl</label>
+      <input class="form-input" id="input-name" placeholder="Ragnar Lothbrok" maxlength="24" autocomplete="off">
+      <div class="form-hint">Ce nom sera chanté dans les salles du Valhalla</div>
+    </div>
+    <div class="form-section" style="margin-top:.8rem">
+      <label class="form-label">Nom du Village</label>
+      <input class="form-input" id="input-village" placeholder="Hestvík" maxlength="20" autocomplete="off">
+    </div>
+    <div style="display:flex;gap:.6rem;margin-top:1rem">
+      <button class="menu-btn btn-secondary" style="width:120px" onclick="goScreen('screen-main')">← Retour</button>
+      <button class="menu-btn btn-primary" style="width:180px" onclick="goScreenName()">Continuer →</button>
+    </div>
+  </div>
+
+  <!-- ÉCRAN : CHOIX DU RÔLE -->
+  <div class="screen" id="screen-role">
+    <div style="font-family:'Uncial Antiqua',serif;font-size:1.4rem;color:var(--gold-light);letter-spacing:3px;margin-bottom:.3rem">Votre Rôle</div>
+    <div style="font-size:.78rem;color:var(--parch-dim);font-style:italic;margin-bottom:.8rem">Chaque rôle offre un arbre de talents et des bâtiments uniques</div>
+    <div class="step-dots"><div class="dot"></div><div class="dot active"></div><div class="dot"></div></div>
+    <div class="roles-grid">
+      <div class="role-card rc-jarl" onclick="selectRole('jarl',this)">
+        <div class="role-selected-badge">✓ Choisi</div>
+        <div class="role-icon">🪓</div>
+        <div class="role-name">Jarl</div>
+        <div class="role-desc">Seigneur de guerre né pour la conquête et la défense de son peuple.</div>
+        <div class="role-bonuses">
+          <div class="role-bonus"><span>⚔</span>+20% ATK en raid</div>
+          <div class="role-bonus"><span>🏰</span>Salle des Raids exclusive</div>
+          <div class="role-bonus"><span>💰</span>+25% butin</div>
+        </div>
+      </div>
+      <div class="role-card rc-chaman" onclick="selectRole('chaman',this)">
+        <div class="role-selected-badge">✓ Choisi</div>
+        <div class="role-icon">🔮</div>
+        <div class="role-name">Chaman</div>
+        <div class="role-desc">Intercesseur des dieux, maître des runes et des forces mystiques.</div>
+        <div class="role-bonuses">
+          <div class="role-bonus"><span>ᚱ</span>+2 Runes/tour</div>
+          <div class="role-bonus"><span>🌿</span>Autel Runique exclusif</div>
+          <div class="role-bonus"><span>☠</span>Invocation de Draugr</div>
+        </div>
+      </div>
+      <div class="role-card rc-skald" onclick="selectRole('skald',this)">
+        <div class="role-selected-badge">✓ Choisi</div>
+        <div class="role-icon">🎵</div>
+        <div class="role-name">Skald</div>
+        <div class="role-desc">Poète-guerrier dont les sagas insufflent courage et gloire à l'alliance.</div>
+        <div class="role-bonuses">
+          <div class="role-bonus"><span>⭐</span>+20 Gloire/victoire</div>
+          <div class="role-bonus"><span>🎵</span>Maison du Skald exclusive</div>
+          <div class="role-bonus"><span>🕵</span>Espionnage gratuit 1×/jour</div>
+        </div>
+      </div>
+      <div class="role-card rc-forge" onclick="selectRole('forge',this)">
+        <div class="role-selected-badge">✓ Choisi</div>
+        <div class="role-icon">🔨</div>
+        <div class="role-name">Forgeron</div>
+        <div class="role-desc">Maître artisan qui forge les armes les plus redoutables des Neuf Mondes.</div>
+        <div class="role-bonuses">
+          <div class="role-bonus"><span>🛡</span>+25% DEF troupes</div>
+          <div class="role-bonus"><span>🔨</span>Grande Enclume exclusive</div>
+          <div class="role-bonus"><span>🏗</span>Construction −30%</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:.6rem;margin-top:.5rem">
+      <button class="menu-btn btn-secondary" style="width:120px" onclick="goScreen('screen-name')">← Retour</button>
+      <button class="menu-btn btn-primary" style="width:180px" id="btn-role-next" onclick="goScreenRole()" disabled>Continuer →</button>
+    </div>
+  </div>
+
+  <!-- ÉCRAN : ALLIANCE -->
+  <div class="screen" id="screen-alliance">
+    <div style="font-family:'Uncial Antiqua',serif;font-size:1.4rem;color:var(--gold-light);letter-spacing:3px;margin-bottom:.3rem">Alliance</div>
+    <div style="font-size:.78rem;color:var(--parch-dim);font-style:italic;margin-bottom:.8rem">Solo ou en coopération ?</div>
+    <div class="step-dots"><div class="dot"></div><div class="dot"></div><div class="dot active"></div></div>
+    <div class="alliance-choice">
+      <div class="ac-card" onclick="selectAllianceMode('solo',this)">
+        <div class="ac-icon">🪓</div>
+        <div class="ac-name">Solo</div>
+        <div class="ac-desc">Explorez Midgard seul. L'alliance peut être rejointe plus tard.</div>
+      </div>
+      <div class="ac-card" onclick="selectAllianceMode('coop',this)">
+        <div class="ac-icon">🤝</div>
+        <div class="ac-name">Coopératif</div>
+        <div class="ac-desc">Fondez ou rejoignez une alliance avec un autre Jarl.</div>
+      </div>
+    </div>
+    <div id="alliance-code-section" style="display:none;width:100%;max-width:360px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.7rem">
+        <button class="menu-btn btn-secondary" id="btn-create-ally" onclick="setAllyAction('create')" style="font-size:.75rem;padding:.45rem">⚔ Fonder</button>
+        <button class="menu-btn btn-secondary" id="btn-join-ally" onclick="setAllyAction('join')" style="font-size:.75rem;padding:.45rem">🤝 Rejoindre</button>
+      </div>
+      <div id="ally-create-section" style="display:none">
+        <div class="form-label">Nom de l'alliance</div>
+        <input class="form-input" id="input-ally-name" placeholder="Fils de Yggdrasil" maxlength="30" style="margin-bottom:.5rem">
+      </div>
+      <div id="ally-join-section" style="display:none">
+        <div class="form-label">Code alliance (6 lettres)</div>
+        <input class="form-input" id="input-ally-code" placeholder="YGGDRS" maxlength="6" style="text-transform:uppercase;letter-spacing:4px;margin-bottom:.5rem">
+      </div>
+    </div>
+    <div style="display:flex;gap:.6rem;margin-top:.8rem">
+      <button class="menu-btn btn-secondary" style="width:120px" onclick="goScreen('screen-role')">← Retour</button>
+      <button class="menu-btn btn-primary" style="width:180px" id="btn-start" onclick="startGame()">⚔ Commencer !</button>
+    </div>
+  </div>
+
+  <!-- ÉCRAN : CRÉDITS -->
+  <div class="screen" id="screen-credits">
+    <div style="font-family:'Uncial Antiqua',serif;font-size:1.4rem;color:var(--gold-light);letter-spacing:3px;margin-bottom:.8rem">À propos</div>
+    <div class="credits-box">
+      <h3>YGGDRASIL</h3>
+      <p>Jeu de stratégie viking coopératif<br>inspiré de Travian & des mythes nordiques</p>
+      <br>
+      <p style="color:var(--gold)">Modules</p>
+      <p>🗺 Carte · 🏘 Village · ⚔ Armée<br>🤝 Alliance · 📜 Quêtes</p>
+      <br>
+      <p style="color:var(--parch-dim)">Version 1.0 · GitHub Pages</p>
+    </div>
+    <div class="back-link" onclick="goScreen('screen-main')">← Retour au menu</div>
+  </div>
+
+</div>
+
+<script>
+// ──────────────────────────────────────────
+//  ÉTAT
+// ──────────────────────────────────────────
+const newGame={name:'',village:'',role:'',allianceMode:'solo',allyName:'',allyCode:'',allyAction:''};
+
+// ──────────────────────────────────────────
+//  ÉTOILES
+// ──────────────────────────────────────────
+(()=>{
+  const s=document.getElementById('stars');
+  for(let i=0;i<120;i++){
+    const d=document.createElement('div');d.className='star';
+    d.style.cssText=`width:${1+Math.random()*2}px;height:${1+Math.random()*2}px;left:${Math.random()*100}%;top:${Math.random()*100}%;animation-delay:${Math.random()*3}s;animation-duration:${1.5+Math.random()*2.5}s`;
+    s.appendChild(d);
+  }
+})();
+
+// ──────────────────────────────────────────
+//  INTRO CINÉMATIQUE
+// ──────────────────────────────────────────
+function skipIntro(){
+  document.getElementById('intro-cinema').classList.add('hidden');
+  buildMainMenu();
+}
+setTimeout(skipIntro,5200);
+
+// ──────────────────────────────────────────
+//  MENU PRINCIPAL (avec sauvegarde)
+// ──────────────────────────────────────────
+function buildMainMenu(){
+  const save=loadSave();
+  const btns=document.getElementById('main-btns');
+  if(save){
+    const s=SEASONS[save.seasonIdx||2];
+    btns.innerHTML=`
+      <div id="save-preview">
+        <div class="sv-row"><span>Jarl</span><span>${save.playerName||'Inconnu'}</span></div>
+        <div class="sv-row"><span>Rôle</span><span>${ROLE_LABELS[save.role]||'?'}</span></div>
+        <div class="sv-row"><span>Village</span><span>${save.villageName||'?'}</span></div>
+        <div class="sv-row"><span>Jour</span><span>${save.day||1} · ${s.icon} ${s.label}</span></div>
+        <div class="sv-row"><span>Gloire</span><span>⭐ ${save.glory||0}</span></div>
+      </div>
+      <button class="menu-btn btn-primary" onclick="continueSave()">▶ Continuer la Partie</button>
+      <button class="menu-btn btn-secondary" onclick="goScreen('screen-name')">⚔ Nouvelle Partie</button>
+      <button class="menu-btn btn-secondary" onclick="goScreen('screen-credits')">📜 À propos</button>
+      <button class="menu-btn btn-danger" onclick="confirmDelete()">🗑 Effacer la sauvegarde</button>`;
+  }else{
+    btns.innerHTML=`
+      <button class="menu-btn btn-primary" onclick="goScreen('screen-name')">⚔ Nouvelle Partie</button>
+      <button class="menu-btn btn-secondary" onclick="goScreen('screen-credits')">📜 À propos</button>`;
+  }
+}
+
+const ROLE_LABELS={jarl:'Jarl 🪓',chaman:'Chaman 🔮',skald:'Skald 🎵',forge:'Forgeron 🔨'};
+const SEASONS=[
+  {key:'spring',label:'Printemps',icon:'🌱'},
+  {key:'summer',label:'Été',icon:'☀'},
+  {key:'autumn',label:'Automne',icon:'🍂'},
+  {key:'winter',label:'Hiver',icon:'❄'},
+];
+
+function continueSave(){
+  window.location.href='yggdrasil-carte.html';
+}
+
+function confirmDelete(){
+  if(confirm('Effacer définitivement la sauvegarde ?')){
+    localStorage.removeItem('yggdrasil_save');
+    buildMainMenu();
+  }
+}
+
+// ──────────────────────────────────────────
+//  NAVIGATION ÉCRANS
+// ──────────────────────────────────────────
+function goScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id)?.classList.add('active');
+}
+
+function goScreenName(){
+  const name=document.getElementById('input-name').value.trim();
+  const village=document.getElementById('input-village').value.trim();
+  if(!name){alert('Entrez votre nom de Jarl !');return}
+  newGame.name=name||'Ragnar';
+  newGame.village=village||'Hestvík';
+  goScreen('screen-role');
+}
+
+let selectedRole=null;
+function selectRole(role,el){
+  selectedRole=role;newGame.role=role;
+  document.querySelectorAll('.role-card').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('btn-role-next').disabled=false;
+}
+
+function goScreenRole(){
+  if(!selectedRole){alert('Choisissez un rôle !');return}
+  goScreen('screen-alliance');
+}
+
+let allianceMode='solo',allyAction='';
+function selectAllianceMode(mode,el){
+  allianceMode=mode;newGame.allianceMode=mode;
+  document.querySelectorAll('.ac-card').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('alliance-code-section').style.display=mode==='coop'?'block':'none';
+  if(mode==='solo'){document.getElementById('ally-create-section').style.display='none';document.getElementById('ally-join-section').style.display='none';}
+}
+
+function setAllyAction(action){
+  allyAction=action;newGame.allyAction=action;
+  document.getElementById('btn-create-ally').className='menu-btn '+(action==='create'?'btn-primary':'btn-secondary');
+  document.getElementById('btn-join-ally').className='menu-btn '+(action==='join'?'btn-primary':'btn-secondary');
+  document.getElementById('ally-create-section').style.display=action==='create'?'block':'none';
+  document.getElementById('ally-join-section').style.display=action==='join'?'block':'none';
+}
+
+// ──────────────────────────────────────────
+//  DÉMARRAGE
+// ──────────────────────────────────────────
+function startGame(){
+  if(!newGame.name||!newGame.role){alert('Remplissez tous les champs !');return}
+  if(newGame.allianceMode==='coop'){
+    if(newGame.allyAction==='create'){newGame.allyName=document.getElementById('input-ally-name').value.trim()||'Alliance de '+newGame.name}
+    if(newGame.allyAction==='join'){newGame.allyCode=document.getElementById('input-ally-code').value.trim().toUpperCase()}
+  }
+  // Créer la sauvegarde initiale
+  const save={
+    playerName:newGame.name,
+    villageName:newGame.village,
+    role:newGame.role,
+    allianceMode:newGame.allianceMode,
+    allyName:newGame.allyName,
+    allyCode:newGame.allyCode,
+    day:1,seasonIdx:0,glory:0,moral:80,
+    resources:{wood:300,stone:200,food:400,gold:80,runes:5,mead:10,souls:0},
+    troops:{militia:5,warrior:0,archer:0,berserker:0,shieldwall:0,knight:0},
+    hero:{name:newGame.name,level:1,xp:0,xpNext:200,atk:10,def:8,hp:100,talentPoints:1,learned:[]},
+    buildings:{barracks:1},
+    explored:[],
+    firstPlay:true,
+    savedAt:Date.now(),
+  };
+  saveSave(save);
+  window.location.href='yggdrasil-carte.html';
+}
+
+// ──────────────────────────────────────────
+//  SAVE / LOAD
+// ──────────────────────────────────────────
+function saveSave(data){
+  try{localStorage.setItem('yggdrasil_save',JSON.stringify(data));}catch(e){}
+}
+function loadSave(){
+  try{const d=localStorage.getItem('yggdrasil_save');return d?JSON.parse(d):null;}catch(e){return null}
+}
+
+// INIT
+buildMainMenu();
+</script>
+</body>
+</html>
